@@ -1,4 +1,5 @@
 import tensorflow as tf 
+import os
 import numpy as np
 from keras import layers, models
 from keras.api.datasets import mnist
@@ -37,28 +38,37 @@ model = models.Sequential([
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy']) 
      
 #Train the model
-model.fit(x_train, y_train, epochs=100) 
-weights = model.get_weights()  # This will return a list of numpy
+model.fit(x_train, y_train, epochs=50) 
 
-# Uzmi težine
-weights = model.get_weights()
+# Saving weights and biases
+base_dir = "values"
+human_readable_dir = os.path.join(base_dir, "human_readable_form")
+machine_readable_dir = os.path.join(base_dir, "machine_readable_form")
 
-# Otvori .txt fajl za pisanje
-# Uzmi težine i bias za svaki sloj
+
+os.makedirs(human_readable_dir, exist_ok=True)
+os.makedirs(machine_readable_dir, exist_ok=True)
+
+# Čuvanje težina i biasa
 for i, layer in enumerate(model.layers):
-    weights = layer.get_weights()  # Ovo vraća listu [weights, biases] ako sloj ima težine
+    weights = layer.get_weights()
 
-    if len(weights) > 0:  # Proveri da li sloj ima težine (npr. Conv2D, Dense)
-        w, b = weights  # weights i bias
+    if len(weights) > 0:
+        w, b = weights  
 
-        # Sačuvaj težine
-        with open(f'layer_{i}_weights.txt', 'w') as f:
+        # Saving in human readable format
+        with open(os.path.join(human_readable_dir, f'layer_{i}_weights.txt'), 'w') as f:
             f.write(f"=== Layer {i} Weights ===\n")
             f.write(np.array2string(w, threshold=np.inf, max_line_width=np.inf))
             f.write("\n\n")
 
-        # Sačuvaj bias
-        with open(f'layer_{i}_biases.txt', 'w') as f:
+        with open(os.path.join(human_readable_dir, f'layer_{i}_biases.txt'), 'w') as f:
             f.write(f"=== Layer {i} Biases ===\n")
             f.write(np.array2string(b, threshold=np.inf, max_line_width=np.inf))
             f.write("\n\n")
+
+        # Alternativno: Čuvanje u binarnom formatu
+        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',')
+        
+        # Čuvanje biasa u CSV formatu
+        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',')
