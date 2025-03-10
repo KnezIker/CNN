@@ -1,45 +1,142 @@
-import tensorflow as tf 
 import os
 import numpy as np
 from keras import layers, models
 from keras.api.datasets import mnist
-from fixedpoint import FixedPoint  # Uvozimo FixedPoint biblioteku
 
-# minst.load_data() loads dataset
-# x_train is set of pictures, y_train is set of numbers that corresponds to those pictures (if x_train[m] is picture of number 8, y_train[m] is 8)
-# x_test and y_test are sets for testing CNN
+# PARAMETERS
+NO_EPOCHS = 10
+
+# We dont want to be random now
+np.random.seed(1503)  
+
+
+###################################################
+#  _                    _       _       _         #
+# | |    ___   __ _  __| |   __| | __ _| |_ __ _  #
+# | |   / _ \ / _` |/ _` |  / _` |/ _` | __/ _` | #
+# | |__| (_) | (_| | (_| | | (_| | (_| | || (_| | #
+# |_____\___/ \__,_|\__,_|  \__,_|\__,_|\__\__,_| #
+#                                                 #
+###################################################
+
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-# Create a simple CNN model
-# Explanation for layers.Conv2D(2, (5, 5), activation='relu', input_shape=(28, 28, 1)):
-#   2 means 2 filters (kernels),
-#   (5, 5) is dimension of kernels, in this case 5 by 5
-#   activation 'relu' is a relu function
-#   input_shape=(28, 28, 1) is a image input shape, so in this case 28 by 28 pixels and in 1 channel (grayscale) (for rgb images it should be 3)
-#Explanation for layers.MaxPooling2D(pool_size=(2, 2)):
-#   first pooling layer and its dimension
-#Explanation for layers.Conv2D(64, (3, 3), activation='sigmoid'):
-#   adds a second layer of convolution
-#Explanation for layers.MaxPooling2D(pool_size=(2, 2)), 
-#   adds a second layer of pooling
-#Explanation for layers.Flatten(),
-#   flattens all created matrix data into a array
-#Explenation for layers.Dense(10, activation='softmax') 
-#   Output layer, activation='softmax' converts data into probabilities (from 0 to 1)
+# Maybe scale it to be between 0 and 1
+# x_train = (x_train / 255).astype('float32')
+# x_test  = (x_test / 255).astype('float32')
+
+###################################################
+#   ____ _   _ _   _   __  __           _      _  #
+#  / ___| \ | | \ | | |  \/  | ___   __| | ___| | #
+# | |   |  \| |  \| | | |\/| |/ _ \ / _` |/ _ \ | #
+# | |___| |\  | |\  | | |  | | (_) | (_| |  __/ | #
+#  \____|_| \_|_| \_| |_|  |_|\___/ \__,_|\___|_| #
+#                                                 #
+###################################################
+
 model = models.Sequential([ 
-    layers.Conv2D(2, (5, 5), activation='relu', input_shape=(28, 28, 1)), 
+    layers.Input(shape=(28,28,1)),
+    layers.Convolution2D(2, (5, 5), activation='relu'), 
     layers.MaxPooling2D(pool_size=(2, 2)), 
-    layers.Conv2D(4, (3, 3), activation='sigmoid'), 
+    layers.Convolution2D(4, (3, 3), activation='sigmoid'), 
     layers.MaxPooling2D(pool_size=(2, 2)), 
     layers.Flatten(), 
+    # layers.Dropout(0.25), # maybe add later
     layers.Dense(10, activation='softmax') 
 ])
+
      
-# Compile the model 
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy']) 
-     
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
 #Train the model
-model.fit(x_train, y_train, epochs=25) 
+model.fit(x_train, y_train, epochs=NO_EPOCHS, validation_data=(x_test, y_test)) 
+
+
+#############################################################
+#  ____  _                   __  __           _      _      #
+# / ___|| |_ ___  _ __ ___  |  \/  | ___   __| | ___| |___  #
+# \___ \| __/ _ \| '__/ _ \ | |\/| |/ _ \ / _` |/ _ \ / __| #
+#  ___) | || (_) | | |  __/ | |  | | (_) | (_| |  __/ \__ \ #
+# |____/ \__\___/|_|  \___| |_|  |_|\___/ \__,_|\___|_|___/ #
+#                                                           #
+#############################################################
+
+if not os.path.exists('./models'):
+    os.makedirs('./models')
+with open('./models/cnn_arch.json', 'w') as fout:
+    fout.write(model.to_json())
+model.save_weights('./models/cnn.weights.h5', overwrite=True)
+
+################################################################
+#  ____  _                                             _       #
+# / ___|| |_ ___  _ __ ___   ___  __ _ _ __ ___  _ __ | | ___  #
+# \___ \| __/ _ \| '__/ _ \ / __|/ _` | '_ ` _ \| '_ \| |/ _ \ #
+#  ___) | || (_) | | |  __/ \__ \ (_| | | | | | | |_) | |  __/ #
+# |____/ \__\___/|_|  \___| |___/\__,_|_| |_| |_| .__/|_|\___| #
+#                                               |_|            #
+#                                                              #
+################################################################
+
+if not os.path.exists('./sample'):
+    os.makedirs('./sample')
+with open("./sample/sample_mnist.dat", "w") as fin:
+    fin.write("1 28 28\n")
+    a = x_test[:1][0]
+    for b in a:
+        fin.write(str(b)+'\n')
+        
+########################################################
+#   ____  _       _     __  __           _      _      #
+#  |  _ \| | ___ | |_  |  \/  | ___   __| | ___| |___  #
+#  | |_) | |/ _ \| __| | |\/| |/ _ \ / _` |/ _ \ / __| #
+#  |  __/| | (_) | |_  | |  | | (_) | (_| |  __/ \__ \ #
+#  |_|   |_|\___/ \__| |_|  |_|\___/ \__,_|\___|_|___/ #
+#                                                      #
+########################################################
+
+if not os.path.exists('./images'):
+    os.makedirs('./images')
+    
+# Plot using visualkeras
+# "$pip install visualkeras" if you dont have it
+import visualkeras
+visualkeras.layered_view(model, 
+                         legend=True, 
+                         to_file='./images/visualkeras.png',
+                         show_dimension=True,
+                         scale_xy=20, scale_z=20,
+                         ).show()
+
+# Plot using keras.utils.plot_model
+from keras.utils import plot_model
+plot_model(model, to_file='./images/plot_model.png', show_shapes=True)
+
+
+###################################################
+#                                                 #
+#  ____               _ _      _   _              #
+# |  _ \ _ __ ___  __| (_) ___| |_(_) ___  _ __   #
+# | |_) | '__/ _ \/ _` | |/ __| __| |/ _ \| '_ \  #
+# |  __/| | |  __/ (_| | | (__| |_| | (_) | | | | #
+# |_|   |_|  \___|\__,_|_|\___|\__|_|\___/|_| |_| #
+#                                                 #
+###################################################
+# get prediction on saved sample, c++ output should be the same
+print('Prediction on saved sample:')
+print(str(model.predict(x_test[:1])[0]))
+
+
+############################################################
+#                                                          #
+#  ____           _            __    ____          _       #
+# |  _ \ ___  ___| |_    ___  / _|  / ___|___   __| | ___  #
+# | |_) / _ \/ __| __|  / _ \| |_  | |   / _ \ / _` |/ _ \ #
+# |  _ <  __/\__ \ |_  | (_) |  _| | |__| (_) | (_| |  __/ #
+# |_| \_\___||___/\__|  \___/|_|    \____\___/ \__,_|\___| #
+#                                                          #
+############################################################
+
+
 
 # Saving weights and biases
 base_dir = "values"
@@ -51,7 +148,6 @@ os.makedirs(human_readable_dir, exist_ok=True)
 os.makedirs(machine_readable_dir, exist_ok=True)
 
 def convert_to_fixed_point(array, integer_bits=15, fractional_bits=7):
-    total_bits = integer_bits + fractional_bits
     scale = 1 << fractional_bits  # 2^fractional_bits
     fixed_point_array = np.round(array * scale).astype(int)
     #min_val = -(1 << (total_bits - 1))
