@@ -25,6 +25,7 @@
 
 #include "cnn.h"
 
+
 /*TODO
 -Fix the code so it works
 -Put test images in more ortodox location
@@ -33,12 +34,13 @@
 */
 
 int main() {
-    int32_t outs[NUMBER_OF_OUTPUTS];
+    float outs[NUMBER_OF_OUTPUTS];
     top(outs, 10);
     /*
     for(int i = 0; i < NUMBER_OF_OUTPUTS; i++)
     {
-        printf("%15f  %d\n", (float)(outs[i]/(65536.0)), i);
+        //printf("%15f  %d\n", (float)(outs[i]/(65536.0)), i);
+        printf("%15f  %d\n", outs[i], i);
     }
     */
 }

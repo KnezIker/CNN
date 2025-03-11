@@ -79,10 +79,11 @@ void       load_image            (const char *filename, uint8_t IMG[IMG_HEIGHT][
     }
 
     char magic[3];
-    int width, height, max_value;
+    int width, height, max_value, trash;
     fscanf(file, "%2s", magic);
     fscanf(file, "%d %d", &width, &height);
     fscanf(file, "%d", &max_value);
+    fscanf(file, "%d", &trash);
 
     for (int i = 0; i < IMG_HEIGHT; i++) {
         for (int j = 0; j < IMG_WIDTH; j++) {
@@ -91,7 +92,7 @@ void       load_image            (const char *filename, uint8_t IMG[IMG_HEIGHT][
     }
     fclose(file);
 }
-void       load_layer_0          (const char *weights, const char *biases, int32_t L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], int32_t L0B [L0_NUMBER_OF_KERNELS])
+void       load_layer_0          (const char *weights, const char *biases, float L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], float L0B [L0_NUMBER_OF_KERNELS])
 {
     FILE *file = fopen(weights, "rb");
     if (file == NULL) {
@@ -107,7 +108,7 @@ void       load_layer_0          (const char *weights, const char *biases, int32
             token = strtok(line, ",");
             for (int k = 0; k < L0_NUMBER_OF_KERNELS; k++) {
                 L0K[k][i][j] = strtof(token, NULL);
-                L0K[k][i][j] = L0K[k][i][j] << CONVERT_BITS;
+                //L0K[k][i][j] = L0K[k][i][j] << CONVERT_BITS;
                 token = strtok(NULL, ",");
             }
         }
@@ -116,7 +117,7 @@ void       load_layer_0          (const char *weights, const char *biases, int32
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L0_KERNEL_DIMENSIONS; j++) {
             for (int k = 0; k < L0_KERNEL_DIMENSIONS; k++) {
-                printf("%6d ", L0K[i][j][k]);
+                printf("%6f ", L0K[i][j][k]);
             }
             printf("\n");
         }
@@ -132,14 +133,15 @@ void       load_layer_0          (const char *weights, const char *biases, int32
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         fgets(line, sizeof(line), file);
         L0B[i] = strtof(line, NULL);
-        L0B[i] = L0B[i] << CONVERT_BITS;
-        printf("%6d ", L0B[i]);
+        //L0B[i] = L0B[i] << CONVERT_BITS;
+        //printf("%6d ", L0B[i]);
+        printf("%6f ", L0B[i]);
     }
     printf("\n");
     printf("Layer 0 biases\n\n\n");
     fclose(file);
 }
-void       load_layer_2          (const char *weights, const char *biases, int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], int32_t L2B [L2_NUMBER_OF_KERNELS])
+void       load_layer_2          (const char *weights, const char *biases, float L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], float L2B [L2_NUMBER_OF_KERNELS])
 {
     FILE *file = fopen(weights, "rb");
     if (file == NULL) {
@@ -157,7 +159,7 @@ void       load_layer_2          (const char *weights, const char *biases, int32
                 for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++)
                 {
                     L2K[g][k][i][j] = strtof(token, NULL);
-                    L2K[g][k][i][j] = L2K[g][k][i][j] << CONVERT_BITS;
+                    //L2K[g][k][i][j] = L2K[g][k][i][j] << CONVERT_BITS;
                     token = strtok(NULL, ",");
                 }
             }
@@ -171,13 +173,12 @@ void       load_layer_2          (const char *weights, const char *biases, int32
     }
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
         fgets(line, sizeof(line), file);
-        //printf("%s", line);
         L2B[i] = strtof(line, NULL);
-        L2B[i] = L2B[i] << CONVERT_BITS;
+        //L2B[i] = L2B[i] << CONVERT_BITS;
     }
     fclose(file);
 }
-void       load_layer_5          (const char *weights, const char *biases, int32_t L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], int32_t L5B [NUMBER_OF_OUTPUTS])
+void       load_layer_5          (const char *weights, const char *biases, float L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], float L5B [NUMBER_OF_OUTPUTS])
 {
     FILE *file = fopen(weights, "rb");
     if (file == NULL) {
@@ -193,7 +194,7 @@ void       load_layer_5          (const char *weights, const char *biases, int32
         for(int j = 0; j < NUMBER_OF_OUTPUTS; j++)
         {
             L5W[j][i] = strtof(token, NULL);
-            L5W[j][i] = L5W[j][i] << CONVERT_BITS;
+            //L5W[j][i] = L5W[j][i] << CONVERT_BITS;
             token = strtok(NULL, ",");
         }
     }
@@ -206,9 +207,8 @@ void       load_layer_5          (const char *weights, const char *biases, int32
     }
     for (int i = 0; i < NUMBER_OF_OUTPUTS; i++) {
         fgets(line, sizeof(line), file);
-        //printf("%s", line);
         L5B[i] = strtof(line, NULL);
-        L5B[i] = L5B[i] << CONVERT_BITS;
+        //L5B[i] = L5B[i] << CONVERT_BITS;
     }
     fclose(file);
 }
@@ -223,13 +223,14 @@ void       print_image           (uint8_t IMG [IMG_HEIGHT][IMG_WIDTH])
     }
     printf("\n");
 }
-void       print_layer_0         (int32_t L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], int32_t L0B [L0_NUMBER_OF_KERNELS])
+void       print_layer_0         (float L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], float L0B [L0_NUMBER_OF_KERNELS])
 {
     //print layer 0 kernels
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L0_KERNEL_DIMENSIONS; j++) {
             for (int k = 0; k < L0_KERNEL_DIMENSIONS; k++) {
-                printf("%d ", L0K[i][j][k]);
+                //printf("%d ", L0K[i][j][k]);
+                printf("%f ", L0K[i][j][k]);
             }
             printf("\n");
         }
@@ -237,18 +238,20 @@ void       print_layer_0         (int32_t L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_D
     }
     //print layer 0 biases
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
-        printf("%d ", L0B[i]);
+        //printf("%d ", L0B[i]);
+        printf("%f ", L0B[i]);
     }
     printf("\n");
 }
-void       print_layer_2         (int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], int32_t L2B  [L2_NUMBER_OF_KERNELS])
+void       print_layer_2         (float L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], float L2B  [L2_NUMBER_OF_KERNELS])
 {
     //print layer 2 kernels
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L0_NUMBER_OF_KERNELS; j++) {
             for (int k = 0; k < L2_KERNEL_DIMENSIONS; k++) {
                 for (int g = 0; g < L2_KERNEL_DIMENSIONS; g++) {
-                    printf("%d ", L2K[i][j][k][g]);
+                    //printf("%d ", L2K[i][j][k][g]);
+                    printf("%f ", L2K[i][j][k][g]);
                 }
                 printf("\n");
             }
@@ -258,16 +261,18 @@ void       print_layer_2         (int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_O
 
     //print layer 2 biases
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
-        printf("%d ", L2B[i]);
+        //printf("%d ", L2B[i]);
+        printf("%f ", L2B[i]);
     }
     printf("\n\n\n");
 }
-void       print_layer_5         (int32_t L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], int32_t L5B [NUMBER_OF_OUTPUTS])
+void       print_layer_5         (float L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], float L5B [NUMBER_OF_OUTPUTS])
 {
     //print layer 5 weights
     for (int i = 0; i < NUMBER_OF_OUTPUTS; i++) {
         for (int j = 0; j < L5_NUMBER_OF_NODES; j++) {
-            printf("%d\n", L5W[i][j]);
+            //printf("%d\n", L5W[i][j]);
+            printf("%d %f\n", j, L5W[i][j]);
         }
         printf("\n");
         printf("Weights for output %d\n\n",i);
@@ -275,12 +280,23 @@ void       print_layer_5         (int32_t L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_N
 
     //print layer 5 biases
     for (int i = 0; i < NUMBER_OF_OUTPUTS; i++) {
-        printf("%d ", L5B[i]);
+        //printf("%d ", L5B[i]);
+        printf("%f ", L5B[i]);
     }
     printf("\n");
 }
-int32_t    sigmoid               (int32_t i)
+float      sigmoid               (float i)
 {   
+    //PIECEWISE APPROX
+    if      (i <= -5)        return 0;
+    else if (i <= -2.754863) return 0.0177 * i + 0.0887;
+    else if (i <= -1.177931) return 0.1050 * i + 0.3292;   
+    else if (i <=  1.177931) return 0.2500 * i + 0.5000;   
+    else if (i <=  2.754863) return 0.1050 * i + 0.6708;   
+    else if (i <   5)        return 0.0177 * i + 0.9113;   
+    else if (i >=  5)        return 1;
+
+    /*
     //PIECEWISE APPROX
     if      (i < -0x00050000) return 0;
     else if (i < -0x0002C13F) return mul(0x00000488, i) + 0x000016B5;
@@ -295,11 +311,13 @@ int32_t    sigmoid               (int32_t i)
     //0x00000488 = 0.0177
     //0x00001AE1 = 0.105
     //0x00004000 = 0.25
-    //0x000016B5 = 0.0177
+    //0x000016B5 = 0.0887
     //0x00005446 = 0.3292
     //0x00008000 = 0.5
     //0x0000ABBA = 0.6708
     //0x0000E94B = 0.9113
+    //0x00010000 = 1
+    */
 
     /*POLYNOMIAL APPROX
     return   0x00008000 + 
@@ -313,29 +331,23 @@ int32_t    sigmoid               (int32_t i)
     //0x00000007 = 0.0001 in Q15.16 format
     */  
 }
-int32_t    ReLu                  (int32_t i)
+float      ReLu                  (float i)
 {
     return (i > 0) ? i : 0;
 }
-void       calc_layer_0_Channels (int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], uint8_t IMG [IMG_HEIGHT][IMG_WIDTH], int32_t L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], int32_t L0B [L0_NUMBER_OF_KERNELS])
+void       calc_layer_0_Channels (float L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], uint8_t IMG [IMG_HEIGHT][IMG_WIDTH], float L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], float L0B [L0_NUMBER_OF_KERNELS])
 {
     //Not tested yet
-    //int32_t TMP[L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];
-    int32_t temp = 0;
+    float temp = 0;
     
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L0_CHANNEL_WITH; j++) {
             for (int k = 0; k < L0_CHANNEL_WITH; k++) {
                 for(int g = 0; g < L0_KERNEL_DIMENSIONS; g++) {
-                    for(int h = 0; h < L0_KERNEL_DIMENSIONS; h++) {
-                        for(int u = 0; u < L0_KERNEL_DIMENSIONS; u++)
-                        {
-                            temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][u][h]);
-                            //printf("%f\n", IMG[g+j][u+k]*L0K[i][u][h]);
-                            //0000000011111111 0000000000000000
-                            // 0100 1000 0100  
-                        }
-                        //TMP[g][h] = temp;
+                    for(int u = 0; u < L0_KERNEL_DIMENSIONS; u++)
+                    {
+                        //temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][u][h]);
+                        temp = temp + IMG[g+j][u+k] * L0K[i][g][u];
                     }
                 }
                 L0C[i][j][k] = ReLu(temp + L0B[i]);
@@ -348,14 +360,15 @@ void       calc_layer_0_Channels (int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L0_CHANNEL_WITH; j++) {
             for (int k = 0; k < L0_CHANNEL_WITH; k++) {
-                printf("%6d ", L0C[i][j][k]);
+                //printf("%6d ", L0C[i][j][k]);
+                printf("%6f ", L0C[i][j][k]);
             }
             printf("\n");
         }
         printf("Chanel %d before pooling\n\n\n", i);
     }
 }
-void       pooling1              (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH], int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], int dimension)
+void       pooling1              (float L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH], float L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], int dimension)
 {
     int col;
     int row;
@@ -386,14 +399,15 @@ void       pooling1              (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_
         for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
             for (int j = 0; j < L1_CHANNEL_WITH; j++) {
                 for (int k = 0; k < L1_CHANNEL_WITH; k++) {
-                    printf("%6d ", L0CP[i][j][k]);
+                    //printf("%6d ", L0CP[i][j][k]);
+                    printf("%6f ", L0CP[i][j][k]);
                 }
                 printf("\n");
             }
             printf("Chanel %d after pooling\n\n\n", i);
         }
 }
-void       pooling2              (int32_t L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH], int32_t L2C [L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH], int dimension)
+void       pooling2              (float L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH], float L2C [L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH], int dimension)
 {
     int col;
     int row;
@@ -424,37 +438,35 @@ void       pooling2              (int32_t L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L3_CHANNEL_WITH; j++) {
             for (int k = 0; k < L3_CHANNEL_WITH; k++) {
-                printf("%6d ", L2CP[i][j][k]);
+                //printf("%6d ", L2CP[i][j][k]);
+                printf("%6f ", L2CP[i][j][k]);
             }
             printf("\n");
         }
         printf("Chanel %d after pooling\n\n\n", i);
     }
 }
-void       calc_layer_2_Channels (int32_t L2C[L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH], int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH], int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], int32_t L2B [L2_NUMBER_OF_KERNELS])
+void       calc_layer_2_Channels (float L2C[L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH], float L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH], float L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], float L2B [L2_NUMBER_OF_KERNELS])
 {
     //Not tested yet
     //L1_CHANNEL_WITH
     //L1_CHANNEL_WITH
     //float TMP[L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];
-    int32_t temp = 0;
+    float temp = 0;
     
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L2_CHANNEL_WITH  ; j++) {
             for (int k = 0; k < L2_CHANNEL_WITH  ; k++) {
                 for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
                     for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
-                        for(int u = 0; u < L2_KERNEL_DIMENSIONS; u++){
-                            for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++)
-                            {
-                                temp = temp + mul(L0CP[g][h+j][f+k], L2K[i][g][f][u]);
-                            }
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++)
+                        {
+                            //temp = temp + mul(L0CP[g][h+j][f+k], L2K[i][g][f][u]);
+                            temp = temp + L0CP[g][h+j][f+k] * L2K[i][g][h][f];
                         }
                     }
                 }
                 L2C[i][j][k] = sigmoid(temp + L2B[i]);
-                //L2C[i][j][k] = temp + L2B[i];
-                //L2C[i][j][k] = temp;
                 temp = 0;
             }
         }
@@ -464,32 +476,34 @@ void       calc_layer_2_Channels (int32_t L2C[L2_NUMBER_OF_KERNELS][L2_CHANNEL_W
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L2_CHANNEL_WITH; j++) {
             for (int k = 0; k < L2_CHANNEL_WITH; k++) {
-                printf("%6d ", L2C[i][j][k]);
+                //printf("%6d ", L2C[i][j][k]);
+                printf("%6f ", L2C[i][j][k]);
             }
             printf("\n");
         }
         printf("Chanel %d\n\n\n", i);
     }
 }
-void       calc_layer_5_outputs  (int32_t OUT [NUMBER_OF_OUTPUTS], int32_t L2CP[L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH], int32_t L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], int32_t L5B  [NUMBER_OF_OUTPUTS])
+void       calc_layer_5_outputs  (float OUT [NUMBER_OF_OUTPUTS], float L2CP[L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH], float L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], float L5B  [NUMBER_OF_OUTPUTS])
 {
     int m = 0;
-    int32_t tmp = 0;
+    float tmp = 0;
     for(int i = 0; i < NUMBER_OF_OUTPUTS; i++){
-        for(int j = 0; j < L2_NUMBER_OF_KERNELS; j++) {
+        tmp = 0;
+        m = 0;
+        for(int j = 0; j < L3_CHANNEL_WITH; j++) {
             for(int k = 0; k < L3_CHANNEL_WITH; k++) {
-                for(int g = 0; g < L3_CHANNEL_WITH; g++){
-                    tmp = tmp + mul(L2CP[j][k][g], L5W[i][m]);
+                for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++){
+                    //tmp = tmp + mul(L2CP[g][j][k], L5W[i][m]);
+                    tmp = tmp + L2CP[g][j][k] * L5W[i][m];  //wild way to do flatten
                     m++;
                 }
             }
         }
         OUT[i] = (tmp + L5B[i]);
-        tmp = 0;
-        m = 0;
     }
 }
-int        max_out               (int32_t OUT [NUMBER_OF_OUTPUTS])
+int        max_out               (float OUT [NUMBER_OF_OUTPUTS])
 {
     int max = 0;
     for(int i = 1; i < NUMBER_OF_OUTPUTS; i++)
@@ -501,24 +515,34 @@ int        max_out               (int32_t OUT [NUMBER_OF_OUTPUTS])
     }
     return max;
 }
-void top(int32_t OUT [NUMBER_OF_OUTPUTS], int n)
+void top(float OUT [NUMBER_OF_OUTPUTS], int n)
 {
     uint8_t IMG  [IMG_HEIGHT][IMG_WIDTH];                                                                  // Image matrix
-    int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];                       // Layer0 kernels
-    int32_t L0B  [L0_NUMBER_OF_KERNELS];                                                                   // Layer0 biases
-    int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS]; // Layer2 kernels
-    int32_t L2B  [L2_NUMBER_OF_KERNELS];                                                                   // Layer2 biases
-    int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES];                                                  // Layer5 weights
-    int32_t L5B  [NUMBER_OF_OUTPUTS];                                                                      // Layer5 biases
-    int32_t L0C  [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH];                                 // Layer0 channels
-    int32_t L0CP [L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH];                                 // Layer0 pooled channels
-    int32_t L2C  [L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH];                                 // Layer2 channels
-    int32_t L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH];                                 // Layer2 pooled channels
+    float L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];                       // Layer0 kernels
+    float L0B  [L0_NUMBER_OF_KERNELS];                                                                   // Layer0 biases
+    float L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS]; // Layer2 kernels
+    float L2B  [L2_NUMBER_OF_KERNELS];                                                                   // Layer2 biases
+    float L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES];                                                  // Layer5 weights
+    float L5B  [NUMBER_OF_OUTPUTS];                                                                      // Layer5 biases
+    float L0C  [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH];                                 // Layer0 channels
+    float L0CP [L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH];                                 // Layer0 pooled channels
+    float L2C  [L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH];                                 // Layer2 channels
+    float L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH];                                 // Layer2 pooled channels
     load_layer_0("../values/machine_readable_form/layer_0_weights.csv","../values/machine_readable_form/layer_0_biases.csv", L0K, L0B);
     load_layer_2("../values/machine_readable_form/layer_2_weights.csv","../values/machine_readable_form/layer_2_biases.csv", L2K, L2B);
     load_layer_5("../values/machine_readable_form/layer_5_weights.csv","../values/machine_readable_form/layer_5_biases.csv", L5W, L5B);
     float correct;
     float percentage;
+    /*
+    load_image("test/test1.pgm", IMG);
+        print_image(IMG);
+        print_layer_0(L0K, L0B);
+        calc_layer_0_Channels(L0C, IMG, L0K, L0B);
+        pooling1(L0CP, L0C, L1_POOL_DIMENSIONS);
+        calc_layer_2_Channels(L2C, L0CP, L2K, L2B);
+        pooling2(L2CP, L2C, L3_POOL_DIMENSIONS);
+        calc_layer_5_outputs(OUT, L2CP, L5W, L5B);
+    */
     int t[10];
     for(int i = 1; i <= n; i++)
     {
@@ -534,11 +558,11 @@ void top(int32_t OUT [NUMBER_OF_OUTPUTS], int n)
         if(0 == max_out(OUT))
         {
             correct++;
-            t[i] = 1; 
+            t[i-1] = 1; 
         }
         else
         {
-            t[i] = 0;
+            t[i-1] = 0;
         }
     }
     percentage = (correct / n)*100;
@@ -548,5 +572,4 @@ void top(int32_t OUT [NUMBER_OF_OUTPUTS], int n)
         printf("%d ", t[i]);
     }
     printf("\n");
-    
 }

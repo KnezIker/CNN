@@ -107,9 +107,10 @@ visualkeras.layered_view(model,
                          scale_xy=20, scale_z=20,
                          ).show()
 
+
 # Plot using keras.utils.plot_model
-from keras.utils import plot_model
-plot_model(model, to_file='./images/plot_model.png', show_shapes=True)
+#from tensorflow.python.keras.utils.vis_utils import plot_model
+#plot_model(model, to_file='./images/plot_model.png', show_shapes=True)
 
 
 ###################################################
@@ -179,14 +180,91 @@ for i, layer in enumerate(model.layers):
 
         with open(os.path.join(human_readable_dir, f'layer_{i}_weights.txt'), 'w') as f:
             f.write(f"=== Layer {i} Weights ===\n")
-            f.write(np.array2string(w_fixed, threshold=np.inf, max_line_width=np.inf))
+            f.write(np.array2string(w, threshold=np.inf, max_line_width=np.inf))
             f.write("\n\n")
 
         with open(os.path.join(human_readable_dir, f'layer_{i}_biases.txt'), 'w') as f:
             f.write(f"=== Layer {i} Biases ===\n")
-            f.write(np.array2string(b_fixed, threshold=np.inf, max_line_width=np.inf))
+            f.write(np.array2string(b, threshold=np.inf, max_line_width=np.inf))
             f.write("\n\n")
 
         # Machine readable format
-        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w_fixed.reshape(-1, w_fixed.shape[-1]), delimiter=',', fmt='%d')
-        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b_fixed, delimiter=',', fmt='%d')
+        #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w_fixed.reshape(-1, w_fixed.shape[-1]), delimiter=',', fmt='%d')
+        #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b_fixed, delimiter=',', fmt='%d')
+        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',', fmt='%f')
+        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',', fmt='%f')
+
+#Trash Code only usefull to print metadata for debugging
+'''
+from PIL import Image
+
+def print_matrix(matrix, values_per_line=5):
+    for row in matrix:
+        for i, value in enumerate(row):
+            print(f"{value:.4f}", end=" ")  # Ispisuje vrednost sa 4 decimalna mesta
+            if (i + 1) % values_per_line == 0:  # Prelazak u novi red nakon svakih 28 vrednosti
+                print()
+        #print()  # Novi red nakon svake vrste
+
+def print_image(matrix, values_per_line=28):
+    for row in matrix:
+        for i, value in enumerate(row):
+            print(f"{int(value):>3}", end=" ")  # Ispisuje vrednost sa 4 decimalna mesta
+            if (i + 1) % values_per_line == 0:  # Prelazak u novi red nakon svakih 28 vrednosti
+                print()
+
+def print_array(arr, values_per_line=100):
+    for i, value in enumerate(arr):
+        print(f"{value:.4f}", end=" ")  # Ispisuje vrednost sa 4 decimalna mesta
+        if (i + 1) % values_per_line == 0:  # Prelazak u novi red nakon svakih `values_per_line` vrednosti
+            print()
+    # Dodatni novi red na kraju ako nije već dodat
+    if len(arr) % values_per_line != 0:
+        print()
+
+
+#Load image
+image_path = "sw/test/test1.pgm"
+image = Image.open(image_path).convert('L')  # Pretvori u grayscale
+image = image.resize((28, 28))  # Promeni veličinu na 28x28 piksela
+
+# Convert to array and normalise
+image_array = np.array(image)
+image_array = np.expand_dims(image_array, axis=0)  # Dodaj batch dimenziju
+image_array = np.expand_dims(image_array, axis=-1)  # Dodaj channel dimenziju
+
+# Create new model that gives output of first layer
+layer_outputs = [model.layers[3].output, model.layers[4].output]
+activation_model = models.Model(inputs=model.inputs, outputs=layer_outputs)
+
+# Gives output of first layer
+activations = activation_model.predict(image_array)
+
+# Izdvojite prva dva kanala
+pooling_output = activations[0]
+flatten_output = activations[1]
+print("Oblik izlaza drugog pooling sloja:", pooling_output.shape)
+print()
+
+image_array = np.array(image)
+
+print("Image:")
+print_image(image_array)
+
+print("pooling_output\n:")
+for i in range(pooling_output.shape[-1]):  # Iteriraj kroz sve kanale
+    print(f"\nKanal {i + 1}:")
+    print_matrix(pooling_output[0, :, :, i])  # Ispiši svaki kanal
+
+print("Oblik flatten_output:", flatten_output.shape)
+flatten_output = np.squeeze(flatten_output)
+print_array(flatten_output) 
+
+
+#Predicting
+image_array = image_array.astype('float32')
+#image_array = image_array / 255.0
+image_array = np.expand_dims(image_array, axis=0)  # Dodaj batch dimenziju
+image_array = np.expand_dims(image_array, axis=-1)  # Dodaj channel dimenziju
+print(str(model.predict(image_array)[0]))'
+'''
