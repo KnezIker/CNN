@@ -3,6 +3,13 @@ import numpy as np
 from keras import layers, models
 from keras.api.datasets import mnist
 
+'''
+TO DO:
+    Make this look nice
+
+'''
+
+
 # PARAMETERS
 NO_EPOCHS = 10
 
@@ -189,13 +196,13 @@ for i, layer in enumerate(model.layers):
             f.write("\n\n")
 
         # Machine readable format
-        #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w_fixed.reshape(-1, w_fixed.shape[-1]), delimiter=',', fmt='%d')
-        #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b_fixed, delimiter=',', fmt='%d')
-        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',', fmt='%f')
-        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',', fmt='%f')
+        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w_fixed.reshape(-1, w_fixed.shape[-1]), delimiter=',', fmt='%d')
+        np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b_fixed, delimiter=',', fmt='%d')
+        #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',', fmt='%f')
+        #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',', fmt='%f')
 
 #Trash Code only usefull to print metadata for debugging
-'''
+
 from PIL import Image
 
 def print_matrix(matrix, values_per_line=5):
@@ -266,5 +273,4 @@ image_array = image_array.astype('float32')
 #image_array = image_array / 255.0
 image_array = np.expand_dims(image_array, axis=0)  # Dodaj batch dimenziju
 image_array = np.expand_dims(image_array, axis=-1)  # Dodaj channel dimenziju
-print(str(model.predict(image_array)[0]))'
-'''
+print(str(model.predict(image_array)[0]))
