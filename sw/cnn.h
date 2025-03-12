@@ -63,8 +63,6 @@
 
 
 /*TODO:
-    Make this look good
-    Make this fork for fixed point
     Add softmax function
     Make better aprox for sigmoid
 */
@@ -462,46 +460,37 @@ int        max_out               (int32_t OUT [NUMBER_OF_OUTPUTS])
     }
     return max;
 }
-void top(int32_t OUT [NUMBER_OF_OUTPUTS], int n)
+void       calculate(
+        int32_t OUT  [NUMBER_OF_OUTPUTS],
+        uint8_t IMG  [IMG_HEIGHT][IMG_WIDTH],
+        int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS],
+        int32_t L0B  [L0_NUMBER_OF_KERNELS],
+        int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS],
+        int32_t L2B  [L2_NUMBER_OF_KERNELS],
+        int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES],
+        int32_t L5B  [NUMBER_OF_OUTPUTS])
 {
     //------SETUP AND LOADING VALUES------
-    uint8_t IMG  [IMG_HEIGHT][IMG_WIDTH];                                                                  // Image matrix
-    int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];                       // Layer0 kernels
-    int32_t L0B  [L0_NUMBER_OF_KERNELS];                                                                   // Layer0 biases
-    int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS]; // Layer2 kernels
-    int32_t L2B  [L2_NUMBER_OF_KERNELS];                                                                   // Layer2 biases
-    int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES];                                                  // Layer5 weights
-    int32_t L5B  [NUMBER_OF_OUTPUTS];                                                                      // Layer5 biases
     int32_t L0C  [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH];                                 // Layer0 channels
     int32_t L0CP [L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH];                                 // Layer0 pooled channels
     int32_t L2C  [L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH];                                 // Layer2 channels
     int32_t L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH];                                 // Layer2 pooled channels
-    load_layer_0("../values/machine_readable_form/layer_0_weights.csv","../values/machine_readable_form/layer_0_biases.csv", L0K, L0B);
-    load_layer_2("../values/machine_readable_form/layer_2_weights.csv","../values/machine_readable_form/layer_2_biases.csv", L2K, L2B);
-    load_layer_5("../values/machine_readable_form/layer_5_weights.csv","../values/machine_readable_form/layer_5_biases.csv", L5W, L5B);
-
-
     //------TEST SIGNLE IMAGE------
-    /*
-    load_image("test/test1.pgm", IMG);
-    print_image(IMG);
-    print_layer_0(L0K, L0B);
     calc_layer_0_Channels(L0C, IMG, L0K, L0B);
     pooling1(L0CP, L0C, L1_POOL_DIMENSIONS);
     calc_layer_2_Channels(L2C, L0CP, L2K, L2B);
     pooling2(L2CP, L2C, L3_POOL_DIMENSIONS);
     calc_layer_5_outputs(OUT, L2CP, L5W, L5B);
-    */
 
    //------TEST MULTIPLE IMAGES------
+   /*
     int t[10];
     int correct = 0;
     float percentage;
     for(int i = 1; i <= n; i++)
     {
-        char filename[20];
-        sprintf(filename, "test/test%d.pgm", i);
-        load_image(filename, IMG);
+        //char filename[20];
+        //sprintf(filename, "test/test%d.pgm", i);
         //print_image(IMG);
         calc_layer_0_Channels(L0C, IMG, L0K, L0B);
         pooling1(L0CP, L0C, L1_POOL_DIMENSIONS);
@@ -525,4 +514,17 @@ void top(int32_t OUT [NUMBER_OF_OUTPUTS], int n)
         printf("%d ", t[i]);
     }
     printf("\n");
+     */
+}
+void       load_weights(
+        int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS],
+        int32_t L0B  [L0_NUMBER_OF_KERNELS],
+        int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS],
+        int32_t L2B  [L2_NUMBER_OF_KERNELS],
+        int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES],
+        int32_t L5B  [NUMBER_OF_OUTPUTS])
+{
+    load_layer_0("../values/machine_readable_form/layer_0_weights.csv","../values/machine_readable_form/layer_0_biases.csv", L0K, L0B);
+    load_layer_2("../values/machine_readable_form/layer_2_weights.csv","../values/machine_readable_form/layer_2_biases.csv", L2K, L2B);
+    load_layer_5("../values/machine_readable_form/layer_5_weights.csv","../values/machine_readable_form/layer_5_biases.csv", L5W, L5B);
 }

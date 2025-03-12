@@ -11,7 +11,7 @@ TO DO:
 
 
 # PARAMETERS
-NO_EPOCHS = 10
+NO_EPOCHS = 50
 
 # We dont want to be random now
 np.random.seed(1503)  
@@ -201,8 +201,29 @@ for i, layer in enumerate(model.layers):
         #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',', fmt='%f')
         #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',', fmt='%f')
 
-#Trash Code only usefull to print metadata for debugging
+from PIL import Image
+save_dir = "test_pgm_images"
+for label in range(10):
+    os.makedirs(os.path.join(save_dir, str(label)), exist_ok=True)
 
+label_counters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def save_as_pgm(image, label, dataset_type="train"):
+    # Kreirajte putanju do foldera za odgovarajuću labelu
+    label_dir = os.path.join(save_dir, str(label))
+    index = label_counters[label]
+    # Kreirajte ime fajla
+    filename = os.path.join(label_dir, f"{dataset_type}_{index}_label_{label}.pgm")
+    # Koristite PIL za čuvanje slike u PGM formatu
+    img = Image.fromarray(image, mode="L")  # "L" označava grayscale sliku
+    img.save(filename)
+
+    label_counters[label] += 1
+
+for i in range(len(x_test)):
+    save_as_pgm(x_test[i], y_test[i], dataset_type="test")
+
+#Trash Code only usefull to print metadata for debugging
+'''
 from PIL import Image
 
 def print_matrix(matrix, values_per_line=5):
@@ -274,3 +295,4 @@ image_array = image_array.astype('float32')
 image_array = np.expand_dims(image_array, axis=0)  # Dodaj batch dimenziju
 image_array = np.expand_dims(image_array, axis=-1)  # Dodaj channel dimenziju
 print(str(model.predict(image_array)[0]))
+'''

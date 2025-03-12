@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
 
 #define IMG_WIDTH                   28
 #define IMG_HEIGHT                  28
@@ -28,17 +29,56 @@
 
 /*TODO
 -Put test images in more ortodox location
--Make Python script to convert test images from png to jpg
 -Make softmax function and use it instead of max_out
 */
 
 int main() {
-    int32_t outs[NUMBER_OF_OUTPUTS];
-    top(outs, 10);
-    //------SINGLE IMAGE RESULT------
-    for(int i = 0; i < NUMBER_OF_OUTPUTS; i++)
+    uint8_t IMG  [IMG_HEIGHT][IMG_WIDTH];                                                                  // input image
+    int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];                       // Layer0 kernels
+    int32_t L0B  [L0_NUMBER_OF_KERNELS];                                                                   // Layer0 biases
+    int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS]; // Layer2 kernels
+    int32_t L2B  [L2_NUMBER_OF_KERNELS];                                                                   // Layer2 biases
+    int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES];                                                  // Layer5 weights
+    int32_t L5B  [NUMBER_OF_OUTPUTS];                                                                      // Layer5 biases
+    int32_t OUT  [NUMBER_OF_OUTPUTS];
+    int correct = 0;
+    float percentage;
+    DIR *dir;
+    struct dirent *entry;
+    const char *base_dir = "../test_pgm_images";
+    int cnt = 0;
+    int file = 0;
+    // Iterate through directories
+    for (int i = 0; i < 10 ; i++) 
     {
-        //printf("%15f  %d\n", (float)(outs[i]/(65536.0)), i);
-        printf("%15d  %d\n", outs[i], i);
+        char dir_path[256];
+        snprintf(dir_path, sizeof(dir_path), "%s/%d", base_dir, i);
+        if ((dir = opendir(dir_path)) == NULL) {
+            printf("Cant opetn directory %s\n", dir_path);
+            break;
+        }
+        printf("Calculating in directory: %s\n", dir_path);
+        // Iterate through all files in the directory
+        while ((entry = readdir(dir)) != NULL) {
+            // Skip "." and ".." (current and parent directory)
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            // Create the full file path
+            char file_path[1024];
+            snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, entry->d_name);
+            printf("%s", file_path);
+            load_weights(L0K, L0B, L2K, L2B, L5W, L5B);
+            load_image(file_path, IMG);
+            calculate(OUT, IMG, L0K, L0B, L2K, L2B, L5W, L5B);
+            if(file == max_out(OUT))
+            {
+                correct++;
+            }
+            cnt++;
+        }
+        file++;
     }
+    percentage = ((float)correct / cnt)*100.0;
+    printf("%f\n", percentage);
 }
