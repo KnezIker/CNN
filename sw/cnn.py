@@ -1,10 +1,12 @@
 import os
 import numpy as np
+import time
 from keras import layers, models
 from keras.api.datasets import mnist
 
 # PARAMETERS
-NO_EPOCHS = 50
+NO_EPOCHS = 25
+FIXED_HEADER = 1
 
 # We dont want to be random now
 np.random.seed(1503)  
@@ -188,6 +190,139 @@ for i, layer in enumerate(model.layers):
         np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b_fixed, delimiter=',', fmt='%d')
         #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',', fmt='%f')
         #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',', fmt='%f')
+
+###########################################################################################################
+#  ____    ___     _____ _   _  ____   ____  ____  _____     ___  _____ _____   ______   __ _    _   _    #
+# / ___|  / \ \   / /_ _| \ | |/ ___| |  _ \|  _ \|_ _\ \   / / \|_   _| ____| |  _ \ \ / // \  | \ | |   #
+# \___ \ / _ \ \ / / | ||  \| | |  _  | |_) | |_) || | \ \ / / _ \ | | |  _|   | |_) \ V // _ \ |  \| |   #
+#  ___) / ___ \ V /  | || |\  | |_| | |  __/|  _ < | |  \ V / ___ \| | | |___  |  _ < | |/ ___ \| |\  |   #
+# |____/_/   \_\_/  |___|_| \_|\____| |_|   |_| \_\___|  \_/_/   \_\_| |_____| |_| \_\|_/_/   \_\_| \_|   #
+#                                                                                                         #
+###########################################################################################################
+
+
+def generate_single_header_file(model, integer_bits, fractional_bits):
+    header_file = 'sw/values.h'
+
+    with open(header_file, 'w') as f:
+        f.write("#ifndef VALUES_H\n")
+        f.write("#define VALUES_H\n\n")
+        #Saving random image from mnist dataset
+
+        #Saving defines for that random image
+        np.random.seed(int(time.time()))
+        random_index = np.random.randint(0, x_test.shape[0])
+        random_image = x_test[random_index]
+        random_value = y_test[random_index]
+        f.write(f"// Random mnist image number: {random_value}\n")
+        for j in range(28):
+            for k in range(28):
+                f.write(f"#define IMG{j:02d}{k:02d} {int(random_image[j, k])}\n")
+        f.write("\n")
+
+        #Saving that image in matrix
+        f.write("uint8_t IMG[28][28] = {\n")
+        for i in range(28):
+            f.write("  {")
+            f.write(", ".join([f"IMG{i:02d}{j:02d}" for j in range(28)]))
+            if i < 27:
+                f.write("},\n")
+            else:
+                f.write("}\n")
+        f.write("};\n\n")
+
+        for i, layer in enumerate(model.layers):
+            weights = layer.get_weights()
+
+            if len(weights) > 0:
+                w, b = weights
+
+                w_fixed = convert_to_fixed_point(w, integer_bits, fractional_bits)
+                b_fixed = convert_to_fixed_point(b, integer_bits, fractional_bits)
+
+                #Saving defines for biases
+                f.write(f"// Layer {i} Biases\n")
+                for j, bias in enumerate(b_fixed):
+                    f.write(f"#define BL{i:d}{j:d} {int(bias)}\n")
+                f.write("\n")
+
+                print(w_fixed.shape)
+                print(i)
+
+                #Saving defines for weights
+                if i != 5 :
+                    f.write(f"// Layer {i} Weights\n")
+                    for j in range(w_fixed.shape[3]):
+                        for k in range(w_fixed.shape[2]):
+                            for l in range(w_fixed.shape[1]):
+                                for m in range(w_fixed.shape[0]):
+                                    f.write(f"#define WL{i:d}{j:d}{k:d}{l:d}{m:d} {int(w_fixed[l, m, k, j])}\n")
+                    f.write("\n")
+                else :
+                    f.write(f"// Layer {i} Weights\n")
+                    for j in range(w_fixed.shape[1]): 
+                        for k in range(w_fixed.shape[0]):
+                            f.write(f"#define WL{i:d}{j:02d}{k:02d} {int(w_fixed[k, j])}\n")
+                    f.write("\n")
+
+                #Saving biases as matrix
+                f.write(f"int32_t L{i}B[{len(b_fixed)}] = {{\n")
+                f.write(", ".join([f"BL{i:d}{j:d}" for j in range(len(b_fixed))]))
+                f.write("\n};\n\n")
+                
+                #Saving weights as matrix
+                if i == 0:
+                    f.write(f"int32_t L{i}W[{w_fixed.shape[3]}][{w_fixed.shape[1]}][{w_fixed.shape[0]}] = {{\n")
+                    for j in range(w_fixed.shape[3]):
+                        f.write("  {\n")
+                        for k in range(w_fixed.shape[2]):
+                            for l in range(w_fixed.shape[1]):
+                                f.write("   {\n")
+                                for m in range(w_fixed.shape[0]):
+                                    f.write("     ")
+                                    f.write(", ".join([f"WL{i:d}{j:d}{k:d}{l:d}{m:d}"]))
+                                    if(m + 1 != w_fixed.shape[0]): f.write(",\n")
+                                    else : f.write("\n")
+                                if(l + 1 != w_fixed.shape[1]): f.write("   },\n")
+                                else: f.write("   }\n")
+                        if(j + 1 != w_fixed.shape[3]): f.write("  },\n")
+                        else: f.write("  }\n")
+                    f.write("};\n\n")
+                elif i == 2 :
+                    f.write(f"int32_t L{i}W[{w_fixed.shape[3]}][{w_fixed.shape[2]}][{w_fixed.shape[1]}][{w_fixed.shape[0]}] = {{\n")
+                    for j in range(w_fixed.shape[3]):
+                        f.write("  {\n")
+                        for k in range(w_fixed.shape[2]):
+                            f.write("   {\n")
+                            for l in range(w_fixed.shape[1]):
+                                f.write("    {\n")
+                                for m in range(w_fixed.shape[0]):
+                                    f.write("      ")
+                                    f.write(", ".join([f"WL{i:d}{j:d}{k:d}{l:d}{m:d}"]))
+                                    if(m + 1 != w_fixed.shape[0]): f.write(",\n")
+                                    else : f.write("\n")
+                                if(l + 1 != w_fixed.shape[1]): f.write("    },\n")
+                                else: f.write("    }\n")
+                            if(k + 1 != w_fixed.shape[2]): f.write("  },\n")
+                            else: f.write("  }\n")
+                        if(j + 1 != w_fixed.shape[3]): f.write("  },\n")
+                        else: f.write("  }\n")
+                    f.write("};\n\n")
+                elif i == 5:
+                    f.write(f"int32_t L{i}W[{w_fixed.shape[1]}][{w_fixed.shape[0]}] = {{\n")
+                    for j in range(w_fixed.shape[1]):
+                        f.write("  {\n")
+                        for k in range(w_fixed.shape[0]):
+                            f.write("    ")
+                            f.write(", ".join([f"WL{i:d}{j:02d}{k:02d}"]))
+                            if(k + 1 != w_fixed.shape[0]): f.write(",\n")
+                            else : f.write("\n")
+                        if(j + 1 != w_fixed.shape[1]): f.write("  },\n")
+                        else : f.write("  }\n")
+                    f.write("};\n\n")
+        f.write("#endif\n")
+
+generate_single_header_file(model, integer_bits=15, fractional_bits=16)
 
 ####################################################################
 #  __  __ _   _ ___ ____ _____   _____ ___    ____   ____ __  __   #

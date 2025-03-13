@@ -2,7 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <dirent.h>
+//#include <dirent.h>
+
+#define LOAD_DATA_FROM_HEADER       1
+#if LOAD_DATA_FROM_HEADER == 1
+#include "values.h"
+#endif
 
 #define IMG_WIDTH                   28
 #define IMG_HEIGHT                  28
@@ -31,7 +36,9 @@
 -Make softmax function and use it instead of max_out
 */
 
-int main() {
+void load_values_from_csv()
+{
+    /*
     uint8_t IMG  [IMG_HEIGHT][IMG_WIDTH];                                                                  // input image
     int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];                       // Layer0 kernels
     int32_t L0B  [L0_NUMBER_OF_KERNELS];                                                                   // Layer0 biases
@@ -82,4 +89,18 @@ int main() {
     }
     percentage = ((float)correct / cnt)*100.0;
     printf("accuracy : %f\n\n", percentage);
+    */
+}
+void load_values_from_header()
+{ 
+    int32_t OUT  [NUMBER_OF_OUTPUTS];
+    //load_image(file_path, IMG);
+    calculate(OUT, IMG, L0W, L0B, L2W, L2B, L5W, L5B);
+    for(int i = 0; i < 10; i++)
+    {
+        printf("%d\n", OUT[i]);
+    }
+}
+int main() {
+    load_values_from_header();
 }
