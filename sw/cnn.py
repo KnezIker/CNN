@@ -3,13 +3,6 @@ import numpy as np
 from keras import layers, models
 from keras.api.datasets import mnist
 
-'''
-TO DO:
-    Make this look nice
-
-'''
-
-
 # PARAMETERS
 NO_EPOCHS = 50
 
@@ -133,20 +126,15 @@ visualkeras.layered_view(model,
 print('Prediction on saved sample:')
 print(str(model.predict(x_test[:1])[0]))
 
+######################################################################################
+#  ____    ___     _____ _   _  ____  __        _______ ___ ____ _   _ _____ ____    #
+# / ___|  / \ \   / /_ _| \ | |/ ___| \ \      / / ____|_ _/ ___| | | |_   _/ ___|   #
+# \___ \ / _ \ \ / / | ||  \| | |  _   \ \ /\ / /|  _|  | | |  _| |_| | | | \___ \   #
+#  ___) / ___ \ V /  | || |\  | |_| |   \ V  V / | |___ | | |_| |  _  | | |  ___) |  #
+# |____/_/   \_\_/  |___|_| \_|\____|    \_/\_/  |_____|___\____|_| |_| |_| |____/   #
+#                                                                                    #
+######################################################################################
 
-############################################################
-#                                                          #
-#  ____           _            __    ____          _       #
-# |  _ \ ___  ___| |_    ___  / _|  / ___|___   __| | ___  #
-# | |_) / _ \/ __| __|  / _ \| |_  | |   / _ \ / _` |/ _ \ #
-# |  _ <  __/\__ \ |_  | (_) |  _| | |__| (_) | (_| |  __/ #
-# |_| \_\___||___/\__|  \___/|_|    \____\___/ \__,_|\___| #
-#                                                          #
-############################################################
-
-
-
-# Saving weights and biases
 base_dir = "values"
 human_readable_dir = os.path.join(base_dir, "human_readable_form")
 machine_readable_dir = os.path.join(base_dir, "machine_readable_form")
@@ -200,6 +188,15 @@ for i, layer in enumerate(model.layers):
         np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b_fixed, delimiter=',', fmt='%d')
         #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_weights.csv'), w.reshape(-1, w.shape[-1]), delimiter=',', fmt='%f')
         #np.savetxt(os.path.join(machine_readable_dir, f'layer_{i}_biases.csv'), b, delimiter=',', fmt='%f')
+
+####################################################################
+#  __  __ _   _ ___ ____ _____   _____ ___    ____   ____ __  __   #
+# |  \/  | \ | |_ _/ ___|_   _| |_   _/ _ \  |  _ \ / ___|  \/  |  #
+# | |\/| |  \| || |\___ \ | |     | || | | | | |_) | |  _| |\/| |  #
+# | |  | | |\  || | ___) || |     | || |_| | |  __/| |_| | |  | |  #
+# |_|  |_|_| \_|___|____/ |_|     |_| \___/  |_|    \____|_|  |_|  #
+#                                                                  #                 
+####################################################################                                                                
 
 from PIL import Image
 save_dir = "test_pgm_images"

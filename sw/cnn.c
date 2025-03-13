@@ -28,7 +28,6 @@
 
 
 /*TODO
--Put test images in more ortodox location
 -Make softmax function and use it instead of max_out
 */
 
@@ -43,11 +42,13 @@ int main() {
     int32_t OUT  [NUMBER_OF_OUTPUTS];
     int correct = 0;
     float percentage;
+    int cnt = 0;
+    int8_t file = 0;
     DIR *dir;
     struct dirent *entry;
     const char *base_dir = "../test_pgm_images";
-    int cnt = 0;
-    int file = 0;
+    load_weights(L0K, L0B, L2K, L2B, L5W, L5B);
+
     // Iterate through directories
     for (int i = 0; i < 10 ; i++) 
     {
@@ -57,28 +58,28 @@ int main() {
             printf("Cant opetn directory %s\n", dir_path);
             break;
         }
-        printf("Calculating in directory: %s\n", dir_path);
+
         // Iterate through all files in the directory
-        while ((entry = readdir(dir)) != NULL) {
+        while ((entry = readdir(dir)) != NULL) 
+        {
             // Skip "." and ".." (current and parent directory)
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
             }
-            // Create the full file path
-            char file_path[1024];
+
+            // Create the full file path and load image
+            char file_path[512];
             snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, entry->d_name);
             printf("%s", file_path);
-            load_weights(L0K, L0B, L2K, L2B, L5W, L5B);
             load_image(file_path, IMG);
+
             calculate(OUT, IMG, L0K, L0B, L2K, L2B, L5W, L5B);
-            if(file == max_out(OUT))
-            {
-                correct++;
-            }
+
+            if(file == max_out(OUT)) correct++;
             cnt++;
         }
         file++;
     }
     percentage = ((float)correct / cnt)*100.0;
-    printf("%f\n", percentage);
+    printf("accuracy : %f\n\n", percentage);
 }
