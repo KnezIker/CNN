@@ -152,8 +152,7 @@ calc_layer_2_Channels<br>
 pooling2<br>
 calc_layer_5_outputs<br>
 
-## calc_layer_0_Channels function
-
+## calc_layer_0_Channels function<br>
 main assembly code:
 ```assembly
 calc_layer_0_Channels:
@@ -195,9 +194,8 @@ c code:
         }
     }
 ```
-So for now assembly code initialised input values, and did  int32_t temp = 0 and int i = 0, and in next step it jumps to fisrt for loop at .L93 
+So for now assembly code initialised input values, and did  int32_t temp = 0 and int i = 0, and in next step it jumps to fisrt for loop at .L93<br>
 .L93 assembly code:
-
 ```assembly
 .L93:
 	lw	a4,-24(s0)     # Load the value of the loop counter (i) into a4
@@ -212,15 +210,14 @@ So for now assembly code initialised input values, and did  int32_t temp = 0 and
 	jr	ra             # Return from the function
 ```
 This code sets boundaries of i for loop, and ensures correct return from calc_layer_0_Channels function.
-Loop will be performed twice, since initial value of i is 0, and loop will jump to .L102 while i <= 1.
+Loop will be performed twice, since initial value of i is 0, and loop will jump to .L102 while i <= 1.<br>
 .L102 assembly code:
-
 ```assembly
 .L102:
 	sw	zero,-28(s0)      # Initialize loop counter (j = 0) on the stack
 	j	.L94              # jump to .L94
 ```
-This code initializes j counter to 0 and jumps to .L94
+This code initializes j counter to 0 and jumps to .L94<br>
 .L94 assembly code:
 ```assembly
 .L94:
@@ -233,13 +230,15 @@ This code initializes j counter to 0 and jumps to .L94
 ```
 This code sets boundaries of for j for loop, and increments i counter by 1.
 This loop will be performed 24 times, since initial value of j is 0 and loop will jump to .L101 while j <= 23.<br>
-There is no jr ra instruction, because .L94 assembly code is directly above .L93 so when its done it will automatically go back to .L93
+There is no jr ra instruction, because .L94 assembly code is directly above .L93 so when its done it will automatically go back to .L93<br>
+.L101 assembly code:
 ```assembly
 .L101:
 	sw	zero,-32(s0)      # Initialize loop counter k = 0) on the stack
 	j	.L95              # jump to .L95
 ```
-This code initializes k counter to 0 and jumps to .L95
+This code initializes k counter to 0 and jumps to .L95<br>
+.L95 assembly code:
 ```assembly
 .L95:
 	lw	a4,-32(s0)     # Load the value of the loop counter (k) into a4
@@ -249,20 +248,22 @@ This code initializes k counter to 0 and jumps to .L95
 	addi	a5,a5,1        # Increment j
 	sw	a5,-28(s0)     # Store value of the loop counter (j) on the stack
 ```
-This code does the same to k for loop as .L94 did for j loop. Also its drectly above of .L94
+This code does the same to k for loop as .L94 did for j loop. Also its drectly above of .L94<br>
+.L100 assembly code:
 ```assembly
 .L100:
 	sw	zero,-36(s0)      # Initialize loop counter g = 0) on the stack
 	j	.L96              # jump to .L96
 ```
-This code initializes g counter to 0 and jumps to .L96
+This code initializes g counter to 0 and jumps to .L96<br>
+.L96 assembly code:
 ```assembly
 .L96:
 
   #CALCULATING ADDRESS OF LOB[i]
 	lw	a4,-36(s0)     # Load the value of the loop counter (g) into a4
 	li	a5,4           # Set a5 to 4 (loop boundary)
-	ble	a4,a5,.L99     # If k <= 4, jump to .L100
+	ble	a4,a5,.L99     # If k <= 4, jump to .L99
 	lw	a5,-24(s0)     # Load the value of the loop counter (k) into a5
 	slli	a5,a5,2        # Multiply k by 4 (shift left by 2 bits)
 	lw	a4,-64(s0)     # Load the base address of L0B into a4
@@ -318,6 +319,143 @@ Additional work:
 - Calculate address of LOC[i][j][k]
 - Call ReLu function
 
-Now this is standard procedure when dealing with tensors, but there is a lot of instructions here that could be accelerated in some dedicated hardware accelerator.
+Now this is standard procedure when dealing with tensors, but there is a lot of instructions here that could be accelerated in some dedicated hardware accelerator. Also .L96 code is directly above .L95 code.
 However this still isn't the end of code.
-Before .L96 goes trough any of code mentioned above
+Before .L96 goes trough any of code mentioned above, it goes trouth .L99 loop.<br>
+.L99 assembly code:
+```assembly
+.L99:
+	sw	zero,-40(s0)      # Initialize loop counter u = 0) on the stack
+	j	.L97              # jump to .L97
+```
+This code initializes u counter to 0 and jumps to .L97<br>
+.L97 assembly code:
+```assembly
+.L97:
+	lw	a4,-40(s0)      # Load the value of the loop counter (u) into a4
+	li	a5,4		# Set a5 to 4 (loop boundary)
+	ble	a4,a5,.L98    	# If k <= 24, jump to .L98
+	lw	a5,-36(s0)	# Load the value of the loop counter (g) into a5
+	addi	a5,a5,1		# Increment g
+	sw	a5,-36(s0)      # Store value of the loop counter (g) on the stack
+```
+This code does the same to u for loop as .L94 did for j loop. Also its drectly above of .L96<br>
+.L98 assembly code:
+```assembly
+.L98:
+	#CALCULATING IMG[g + j][u + k] << DECIMAL_BITS
+	lw	a4,-36(s0)        # Load the value of (g) into a4
+	lw	a5,-28(s0)	  # Load the value of (j) into a5
+	add	a5,a4,a5	  # Calculate (g + j) and store in a5
+	mv	a4,a5             # Move (g + j) to a4
+	mv	a5,a4             # Move (g + j) to a5
+	slli	a5,a5,3           # Multiply (g + j) by 8 (shift left by 3 bits)
+	sub	a5,a5,a4          # Subtract (g + j) from a5 (a5 = (g + j) * 8 - (g + j) = (g+j)*7)
+	slli	a5,a5,2           # Multiply a5 by 4 (shift left by 2 bits) a5 = 4*7*(g+j)
+	mv	a4,a5             # Move the result to a4
+	lw	a5,-56(s0)        # Load the base address of IMG into a5
+	add	a4,a5,a4          # Calculate the address of IMG[g + j] and store in a4
+	lw	a3,-40(s0)	  # Load the value of (u) into a3
+	lw	a5,-32(s0)        # Load the value of (k) into a5
+	add	a5,a3,a5          # Calculate (u + k) and store in a5
+	add	a5,a4,a5          # Calculate the final address of IMG[g + j][u + k] and store in a5
+	lbu	a5,0(a5)	  # Load the byte value of IMG[g + j][u + k] into a5 (unsigned) (because IMG is uint8_t type)
+	slli	a2,a5,16	  # Shift IMG[g + j][u + k] left by 16 bits (equivalent to multiplying by 65536)(fixed point conversion)
+
+	#CALCULATING L0K[i][g][u]
+	lw	a4,-24(s0)	  # Load the value of (i) into a4
+	li	a5,100	 	  # Load the constant 100 into a5
+	mul	a5,a4,a5	  # Multiply (i) by 100 and store in a5 (a5 = i*100)
+	lw	a4,-60(s0)	  # Load the base address of L0K into a4
+	add	a3,a4,a5	  # Calculate the address of L0K[i] and store in a3 (a3 = base address of L0K + i*100)
+	lw	a4,-36(s0)	  # Load the value of (g) into a4
+	mv	a5,a4		  # Move (g) to a5
+	slli	a5,a5,2		  # Multiply (g) by 4 (shift left by 2 bits) (a5 = g*4)
+	add	a5,a5,a4	  # Add (g) to a5 (a5 = g * 4 + g = g*5)
+	lw	a4,-40(s0)	  # Load the value of (u) into a4
+	add	a5,a5,a4	  # Add (u) to a5 (a5 = g*5 + u)
+	slli	a5,a5,2           # Multiply a5 by 4 (shift left by 2 bits) (a5 = (g*5 + u)*4)
+	add	a5,a3,a5	  # Calculate the final address of L0K[i][g][u] and store in a5
+	lw	a5,0(a5)	  # Load the value of L0K[i][g][u] into a5
+
+	#CALLING mul
+	mv	a1,a5		  # Move L0K[i][g][u] to a1 (second argument for mul)
+	mv	a0,a2		  # Move IMG[g + j][u + k] << 16 to a0 (first argument for mul)
+	call	mul		  # Call the mul function
+	mv	a4,a0		  # Move the result of mul to a4
+
+	#UPDATING tmp AND INCREMENTING u
+	lw	a5,-20(s0)	  # Load the value of temp into a5
+	add	a5,a5,a4	  # Add the result of mul to temp
+	sw	a5,-20(s0)	  # Store the updated value of temp
+	lw	a5,-40(s0)	  # Load the value of (u) into a5
+	addi	a5,a5,1		  # Increment (u) by 1
+	sw	a5,-40(s0)	  # Store the updated value of (u)
+```
+Again like before, most of the code corresponds to calculating addresses of L0K[i][g][u] and IMG[g + j][u + k].
+Also, this code is directly above .L97.
+The only thing left to do now is to go trough mul function.<br>
+.mul assembly code:
+```assembly
+mul:
+	addi	sp,sp,-32	# Allocate 32 bytes on the stack for local variables
+	sw	s0,28(sp)	# Save the s0 register on the stack
+	addi	s0,sp,32	# Set s0 to the top of the stack (s0 = sp + 32)
+	sw	a0,-20(s0)	# Save the first argument (a) on the stack
+	sw	a1,-24(s0)	# Save the second argument (b) on the stack
+	lw	a1,-20(s0)	# Load the first argument (a) into a1
+	mv	a6,a1		# Move first argument (a) to a6
+	srai	a1,a1,31	# Sign-extend a to 64 bits (a1 = a >> 31)
+	mv	a7,a1		# Move the sign-extended upper 32 bits to a7
+	lw	a1,-24(s0)	# Load the second argument (b) into a1
+	mv	a2,a1		# Move b to a2
+	srai	a1,a1,31	# Sign-extend b to 64 bits (a1 = b >> 31)
+	mv	a3,a1		# Move the sign-extended upper 32 bits to a3
+	mul	a0,a7,a2	# Multiply the upper 32 bits of a with the lower 32 bits of b (a0 = (a >> 31) * b)
+	mul	a1,a3,a6	# Multiply the upper 32 bits of b with the lower 32 bits of a (a1 = (b >> 31) * a)
+	add	a1,a0,a1	# Add the two intermediate results (a1 = (a >> 31) * b + (b >> 31) * a)
+	mul	a0,a6,a2	# Multiply the lower 32 bits of a and b (a0 = a * b)
+	mulhu	a5,a6,a2	# Multiply the lower 32 bits of a and b, store the upper 32 bits in a5 (a5 = (a * b) >> 32)
+	mv	a4,a0		# Move the lower 32 bits of the result to a4
+	add	a3,a1,a5	# Add the intermediate results to the upper 32 bits (a3 = (a >> 31) * b + (b >> 31) * a + (a * b) >> 32)
+	mv	a5,a3		# Move the final upper 32 bits to a5
+	slli	a3,a5,16	# Shift the upper 32 bits left by 16 bits (a3 = a5 << 16)
+	srli	t1,a4,16	# Shift the lower 32 bits right by 16 bits (t1 = a4 >> 16)
+	or	t1,a3,t1	# Combine the upper and lower parts (t1 = (a5 << 16) | (a4 >> 16))
+	srai	t2,a5,16	# Sign-extend the upper 32 bits (t2 = a5 >> 16)
+	mv	a5,t1		# Move the combined result to a5
+	mv	a0,a5		# Move the final result to a0 (return value)
+	lw	s0,28(sp)	# Restore the s0 register from the stack
+	addi	sp,sp,32	# Deallocate 32 bytes from the stack
+	jr	ra		# Return from the function
+```
+Now this is a lot of code. Luckily there is no need to understand it all. Hardware accelerator of this code would work differently anyways.<br>
+But there are 30 instructions here. Each instruction is one cycle instructions + 2 mul instructions that are usualy 5 cycle instructions.<br>
+In total 38 cycles just for one mul function.<br>
+The code that calls mul function, .L98 has 44 cycles without mul, so in total 38 + 44 = 82 cycles.<br>
+
+.L98 code will run L0_KERNEL_DIMENSIONS = 5 times, alongside with .L97 code that calls it.<br>
+.L97 code has 3 instructions that will loop, so in total that is (38 + 44 + 3)*5 = 425 cycles.<br>
+.L97 code is called by .L99 wich adds aditional 2 instructions, which is called by .L96 which adds aditional 3 instructions<br>
+So in total ((38 + 44 + 3)*5 + 2 + 3) = 430 cycles.<br>
+
+.L99 code will be calld by .L96 L0_KERNEL_DIMENSIONS = 5 times, so in total ((38 + 44 + 3)*5 + 2 + 5)*5 = 2160 cycles.<br>
+.L96 code brings additional 32 instructions, so in total ((38 + 44 + 3)*5 + 2 + 5)*5 + 32 = 2192 cycles.<br>
+.L96 code is called by .L100 wich adds aditional 2 instructions, which is called by .L95 which adds aditional 3 instructions<br>
+So in total ((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5 = 2197 cycles.<br>
+
+.L100 code will be calld by .L95 L0_CHANNEL_WITH = 28 times, so in total (((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 = 61516 cycles.<br>
+.L95 code brings additional 3 instructions, so in total (((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 = 61519 cycles.<br>
+.L95 code is called by .L101 wich adds aditional 2 instructions, which is called by .L94 which adds aditional 3 instructions<br>
+so in total (((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5 = 61524 cycles.<br>
+
+.L101 code will be calld by .L94 L0_CHANNEL_WITH = 28 times, so in total ((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 = 1722672 cycles.<br>
+.L94 code brings additional 3 instructions, so in total ((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 = 1722675 cycles.<br>
+.L94 code is called by .L102 wich adds aditional 2 instructions, which is called by .L93 which adds aditional 3 instructions<br>
+so in total ((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 + 5 = 1722680 cycles.<br>
+
+.L102 code will be calld by .L93 L0_NUMBER_OF_KERNELS = 2 times,<br>
+so in total (((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 + 5)*2 = 3445360 cycles.<br>
+
+Finally, .L93 is called by calc_layer_0_Channels which add another 12 cycles.<br>
+Giving grand total of around 3,445,372 cycles, just for first layer 0 calculation.
