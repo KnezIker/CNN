@@ -5,8 +5,7 @@ Then, to extract biases and weights.
 After that, to put those weights and biases in C code and run it on the Pulpissimo architecture in the RISCY core.
 Finally, to determine which instructions are repeated the most and to create a simple hardware accelerator in the RISCY core for those instructions.
 ## CNN structure
-This CNN is basically the same as shown in this YouTube tutorial:
-https://www.youtube.com/watch?v=jDe5BAsT2-Y&t=607s
+This CNN is basically the same as shown in this [YouTube](https://www.youtube.com/watch?v=jDe5BAsT2-Y&t=607s) tutorial:
 
 The main structure of the CNN in Python terms is:
 
@@ -29,7 +28,8 @@ It consists of 5 layers:
 </div>
 
 The zeroth layer performs convolution with two kernels (a fancy word for a matrix of weights) of size 5x5.
-The first kernel (Kernel 1) is aligned with the top-left corner of the input layer (image) and performs matrix multiplication with the overlapped image pixels.
+The first kernel (Kernel 1) is aligned with the top-left corner of the input layer (image) and performs multiplication with the overlapped image pixels.
+The multiplication is scalar (and not matrix!).
 That results in a 5x5 matrix.
 Then, all values in the resulting matrix are summed up, and the bias is added to the total.
 Then, that sum goes through the ReLU function, y = relu(x), which is:<br>
@@ -45,9 +45,9 @@ When Kernel 1 is done with all pixels in the image, the process is repeated with
 
 In layer 1 (pooling layer) both activation matrices are srunk down by half in size.
 That is performed by mooving filter (2x2) to the top left corner of activation 1 matrix.
-Filter doesnt contain any weights unlike kernels, its empty.
+Filter doesnt contain any weights. Unlike kernels, its empty.
 But it takes overlaping values, finds the greatest, and that value is now top left falue of channel 1 (layer 1 output).
-Nest the filter is mooved to the left by 2 pixels, and cycle continues.
+Next, the filter is mooved to the left by 2 pixels, and cycle continues.
 Process is the same for channel 2, the imput is just activation 2 matrix.
 
 <div align="center">
@@ -82,3 +82,25 @@ In Layer 4, all matrix values are flattened into one array.
 </div>
 
 In the final Layer 5, the output array of Layer 4 is connected in a neural network, and the output of Layer 5 consists of 10 percentages that represent how confident the CNN is in identifying the number it sees.
+
+## The code
+In the sw folder, there are three main files:<br>
+cnn.py<br>
+cnn.c<br>
+cnn.h<br>
+
+The Python code (cnn.py) creates a CNN model, trains it on the MNIST dataset, converts MNIST images to .pgm format, and generates weights and biases. These weights, biases, and images are saved in different formats.<br>
+There are two formats for storing data:<br>
+Human-readable format: Data is stored in .txt files, intended for human inspection.<br>
+Machine-readable format: Data is stored in .csv files, intended for machine processing.<br>
+Both formats support floating-point and fixed-point data.<br>
+
+The C code (cnn.c) takes the generated weights, biases, and a .pgm image as input, performs CNN operations, and detects the number shown in the given image.<br> 
+For this detection, the C code uses functions defined in the cnn.h file.<br>
+At the top of the cnn.h file, there are comments describing how to switch between fixed-point and floating-point arithmetic.<br>
+The next step is to analyze which instructions are repeated most frequently and create a hardware accelerator for them, turning them into custom instructions.
+<br>
+To achieve this, the .c and .h code will be converted into RISC-V assembly code. The RISC-V assembly code is chosen because the goal is to run it on the PULPissimo platform. The same GCC compiler provided by PULPissimo is used for this purpose (see the setup guide [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
+Storing weights, biases, and images in Python as .txt or .csv files and then reading them in C works well when running the C code on a PC. However, this approach is less suitable for microcontrollers, as some libraries (e.g., dirent.h) are not available for RISC-V compilers.<br>
+While it is possible to transfer the data to the microcontroller via UART, a more elegant solution is to embed the data directly into another .h file and include it in the C code. This is why the Python script also generates a values.h file.<br>
+For now, values.h is only available in fixed-point format, but it can easily be modified to support floating-point data if needed.
