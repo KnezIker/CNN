@@ -104,3 +104,16 @@ To achieve this, the .c and .h code will be converted into RISC-V assembly code.
 Storing weights, biases, and images in Python as .txt or .csv files and then reading them in C works well when running the C code on a PC. However, this approach is less suitable for microcontrollers, as some libraries (e.g., dirent.h) are not available for RISC-V compilers.<br>
 While it is possible to transfer the data to the microcontroller via UART, a more elegant solution is to embed the data directly into another .h file and include it in the C code. This is why the Python script also generates a values.h file.<br>
 For now, values.h is only available in fixed-point format, but it can easily be modified to support floating-point data if needed.
+
+## Following assembly code
+
+At the first look at the assembly code there are 4020 lines of pure love.
+However there is a lot of assembly code that is not the main scope of this project.
+Good starting point is calculate function.
+
+### Calculate function
+
+The good news is that now the code that needs to be understood is shrunken to 124 lines of calculate function + functions called from calculate function.
+Calculate function looks something like this
+
+
