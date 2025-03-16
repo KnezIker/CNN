@@ -472,3 +472,44 @@ temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);
 hardvare accelerated.
 
 ## Definition of hardware accelerator and custom instructions
+
+Hardware Accelerator, should be defined as:<br>
+```verilog
+input  logic 	    clk
+input  logic 	    rst
+input  logic 	    en
+input  logic [31:0] a
+input  logic [31:0] b
+output logic [31:0] result
+```
+<br>
+<div align="center">
+  <img src="doc/HA_Cmul.png" alt="Opis slike" width="300" />
+</div>
+<br>
+And there should be at least 3 coustom instructions for it:<br>
+Cmul a, b<br>
+Which brings operands a and b to accelerator and enables it.<br>
+Cget rx<br>
+Which takes the result of accelerator and sotres it in rx register<br>
+Crst<br>
+Which resets the accelerator.
+
+### codes for custom instructions
+
+There is a lot of room for improovements and creativity here. But since this is just a foundation for my bachelor's thesis, and not some high end company product, there is only a need for this conditions to be met:
+
+- Code must not overlap with some existing code for other *Standard* or *Pulp extended* instructions
+- Code should leave space for about 5 or 6 aditional instructions
+- All added codes should be grouped in some way (quality of life condition, optional)
+
+Opcode that meets those conditins, (amoung others) is 0110011 i.e. opcode for add instruction.<br>
+Now funct7 should be choosen.<br>
+11 and 10 for first two bits of funct7 is already taken by Puplp extensions.<br>
+0000000 and 0100000 is also taken by standard RV32I alu instructions.<br>
+01xxxxx and 000xxxx is taken by pulp instructions. Not all x bits are taken, and there are probably holes that could be used, but that involves aditional brain power which is already limited.<br>
+0000001 is also taken for M extension.<br>
+Now that leaves us with a lot of free space.<br>
+For organisational reasosns and to make things simpler this will be funct7 space for instructions 001xxxx.<br>
+So 001 0000 < funct7 < 001 1111.<br>
+That is 16 funct7 codes and every funct7 code has 3 bits for func3 so in total 16*8 = 128 which is enough even to make separate instruction set.
