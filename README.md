@@ -2,7 +2,7 @@
 ## Project idea
 The idea of this project is to train a simple convolutional neural network (CNN) that detects numbers from 0 to 9 in grayscale images with 8-bit pixels, in python.
 Then, to extract biases and weights.
-After that, to put those weights and biases in C code and run it on the Pulpissimo architecture in the RISCY core.
+After that, to put those weights and biases in C code and run it on the Pulpissimo architecture in the cv32e40p RISCY core.
 Finally, to determine which instructions are repeated the most and to create a simple hardware accelerator in the RISCY core for those instructions.
 ## CNN structure
 This CNN is basically the same as shown in this [YouTube](https://www.youtube.com/watch?v=jDe5BAsT2-Y&t=607s) tutorial:
@@ -513,3 +513,35 @@ Now that leaves us with a lot of free space.<br>
 For organisational reasosns and to make things simpler this will be funct7 space for instructions 001xxxx.<br>
 So 001 0000 < funct7 < 001 1111.<br>
 That is 16 funct7 codes and every funct7 code has 3 bits for func3 so in total 16*8 = 128 which is enough even to make separate instruction set.
+
+So codes for starting 3 instructions should look like this:
+
+<br>
+<div align="center">
+  <img src="doc/Codes.png" alt="Opis slike" width="1100" />
+</div>
+<br>
+
+## Preparing cv32e40p core for accelerator
+
+From this point on, most of the work will be done in verilog (fun part).
+Goal is to modify cv32e40p core of pulpissimo to run our custom instruction on custom hardware accelerator.
+But to modify cv32e40p core, one firstly needs to open it.
+Detailed instructions for installing pulpissimo could be found [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
+If doing this for the first time, expect to spend some time on it.
+When pulpissimo is downloaded, and set up files for cv32e40p core could be found by opening terminal from pulpissimo/utils/bin and typing command:
+```
+/bender packages --flat
+```
+Next, type this command:
+```
+for pkg in $(./bender packages --flat); do
+    ./bender clone "$pkg"
+done
+```
+This will create working_dir folder in pulpissimo folder, and all pulpissimo rtl files will be there, in separate folders.
+cv32e40p files are in pulpissimo/working_dir/cv32e40p/rtl folder.
+
+### starting point
+Detailed description and datasheet of cv32e40p could be found here [here](https://github.com/openhwgroup/cv32e40p)).<br> 
+This is just a oversimlified version that covers only things related to this topic.
