@@ -545,3 +545,137 @@ cv32e40p files are in pulpissimo/working_dir/cv32e40p/rtl folder.
 ### starting point
 Detailed description and datasheet of cv32e40p could be found here [here](https://github.com/openhwgroup/cv32e40p)).<br> 
 This is just a oversimlified version that covers only things related to this topic.
+
+//*TODO:
+MAKE THIS SHORT OVERSIMPLIFIED VERSION A LITTLE BIT LESS OVERSIMPLIFIED*//
+
+Riscy core is made out of separate units and pipeline stages.
+Classic fetch decode execute structure.
+
+<br>
+<div align="center">
+  <img src="doc/Riscy_structure.png" alt="Opis slike" width="1100" />
+</div>
+<br>
+
+Since we are not changing core of the core, instruction fetch stage (if_stage) will not be changed.
+The only changes that will be made are in instruction decode (id_stage) stage and execute (ex_stage) stage.<br>
+This is how instruction decode stage looks like:
+
+<br>
+<div align="center">
+  <img src="doc/id_stage.png" alt="Opis slike" width="1100" />
+</div>
+<br>
+
+/*TODO
+WRITE BRIEF DESCRIPTION ON HOW id stage works*/
+
+The good starting point is cv32e40p_decoder.<br>
+There under:<br>
+unique case (instr_rdata_i[6:0])
+under:<br>
+OPCODE_OP
+under:<br>
+// PREFIX 00/01<br>
+else begin<br>
+at the end of that else, this code should be added.
+
+```verilog
+{6'b01_0000, 3'b000}: begin         // cmul
+  alu_en = 1'b0;
+  cumm_en = 1'b1;
+  cumm_rst = 1'b0;
+  regb_used_o = 1'b1;
+  rega_used_o = 1'b1;
+end
+{6'b01_0000, 3'b001}: begin         // cget
+  alu_en = 1'b0;
+  cumm_en = 1'b1;
+  cumm_rst = 1'b0;
+  regb_used_o = 1'b0;
+  rega_used_o = 1'b0;
+end
+{6'b01_0000, 3'b001}: begin         // crst
+  alu_en = 1'b0;
+  cumm_en = 1'b1;
+  cumm_rst = 1'b1;
+  regb_used_o = 1'b0;
+  rega_used_o = 1'b0;
+end
+```
+This code sets input control signals for accelerator, enable and reset, disables alu and defines using of operands a and b.
+Naturally, cumm_en and cumm_rst are new singals and should be defined in same place and in same way as alu_en is defined.
+Also at the beginning of first always_comb, under alu_en = 1'b1; should also be added:<br>
+cumm_en  = 1'b0;<br>
+cumm_rst = 1'b0;<br>
+This is default value, so in other instructions, our accelerator is not enabled and is not reseted.<br>
+Since cumm_en and cumm_rst are new signals, they should aslso be outputs ofcv32e40p_decoder, so in module definition this code should be added:<br>
+
+```verilog
+// CUMULATIVE signals
+output logic        cumm_en_o, 
+output logic        cumm_rst_o, 
+```
+Finally, at the end of ofcv32e40p_decoder module, this code should be added, to connect variables with output signals.<br>
+
+```verilog
+assign cumm_en_o                   = (deassert_we_i) ? 1'b0          : cumm_en;
+assign cumm_rst_o                  = (deassert_we_i) ? 1'b0          : cumm_rst;
+```
+
+And thats it for ofcv32e40p_decoder module.<br>
+Now, since this module is integrated into cv32e40p_id_stage, and 2 more outputs of ofcv32e40p_decoder were added, there should also be added this code:<br>
+```verilog
+.cumm_en_o(cumm_en), 
+.cumm_rst_o(cumm_rst),
+```
+Where cumm_en and cumm_rst are new variables, that should be created following the example of alu_en.<br>
+
+At the ID-EX pipeline in cv32e40p_id_stage, where local variables are connected to output signals this code should be added:<br>
+
+```verilog
+cumm_en_ex_o <= cumm_en; 
+if (cumm_en) begin
+   cumm_operand_a_ex_o <= alu_operand_a;
+   cumm_operand_b_ex_o <= alu_operand_b;
+   cumm_rst_ex_o       <= cumm_rst;
+end
+```
+Where again, cumm_operand_a_ex_o, cumm_operand_b_ex_o, cumm_en_ex_o, cumm_rst_ex_o are new output singnals of cv32e40p_id_stage and should be created following the example of alu_en_ex_o.<br>
+cumm_operand_a_ex_o and cumm_operand_b_ex_o are connected to alu_operand_a and alu_operand_b because it vas convenient.<br>
+In ofcv32e40p_decoder new signals could be made following the example of alu_operand_a and alu_operand_b but they would do the same job, just have a different name. So just using alu_operand_b and alu_operand_b was easier.<br>
+Also at same ID-EX pipeline under if (rst_n == 1'b0) those new output signals should all be resetted to 0.<br>
+
+Also bellow that code alu_en is used with other enable signals to check that instruction after taken branch is flushed and that EX stage is ready to receive flushed instruction immediately.<br>
+And to check that illegal instruction has no other side effects.<br>
+There should also be added cumm_en following the example of alu_en.<br>
+
+Finally there is one part of code where:<br>
+
+```verilog
+//EX stage is ready but we don't have a new instruction for it, 
+//so we set all write enables to 0, but unstall the pipe
+```
+
+It could be found by searching for those comments.<br>
+This line hould be added there:<br>
+```verilog
+cumm_en_ex_o          <= 1'b0;
+```
+
+And thats all of the changes for cv32e40p_id_stage.<br>
+
+Now since cv32e40p_id_stage is integrated in cv32e40p_core, and outputs of cv32e40p_id_stage are changed, it should be updated in cv32e40p_core.<br>
+New values should be connected to new local variables.<br>
+Those new local variables only connect new cv32e40p_id_stage signals to cv32e40p_ex_stage.<br>
+So new input signals in cv32e40p_ex_stage should be created.<br>
+
+```verilog
+input logic        [31:0] cumm_operand_a_i,
+input logic        [31:0] cumm_operand_b_i,
+input logic               cumm_en_i,
+input logic               cumm_rst_i,
+```
+
+Now is the time to start writing cummulative accelerator.
