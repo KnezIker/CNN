@@ -459,3 +459,16 @@ so in total (((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 + 5)*2 =
 
 Finally, .L93 is called by calc_layer_0_Channels which add another 12 cycles.<br>
 Giving grand total of around 3,445,372 cycles, just for first layer 0 calculation.
+
+<div align="center">
+  <img src="doc/ALotOfCycles.png" alt="Opis slike" width="300" />
+</div>
+
+So the idea is to make hardware accelerator, that will do mul function, as well as cumulating result, in (hopefully) less than 6 cycles.<br>
+Basically, to make this instruction:<br>
+```c
+temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);
+```
+hardvare accelerated.
+
+## Definition of hardware accelerator and custom instructions
