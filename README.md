@@ -584,72 +584,88 @@ at the end of that else, this code should be added.
 ```verilog
 {6'b01_0000, 3'b000}: begin         // cmul
   alu_en = 1'b0;
-  cumm_en = 1'b1;
-  cumm_rst = 1'b0;
+  cml_en = 1'b1;
+  cml_rst = 1'b0;
+  cml_get = 1'b0;
   regb_used_o = 1'b1;
   rega_used_o = 1'b1;
+  regfile_alu_we = 1'b0;
 end
 {6'b01_0000, 3'b001}: begin         // cget
   alu_en = 1'b0;
-  cumm_en = 1'b1;
-  cumm_rst = 1'b0;
+  cml_en = 1'b0;
+  cml_rst = 1'b0;
+  cml_get = 1'b1;
   regb_used_o = 1'b0;
   rega_used_o = 1'b0;
+  regfile_alu_we = 1'b1;
 end
 {6'b01_0000, 3'b001}: begin         // crst
   alu_en = 1'b0;
-  cumm_en = 1'b1;
-  cumm_rst = 1'b1;
+  cml_en = 1'b1;
+  cml_rst = 1'b1;
+  cml_get = 1'b0;
   regb_used_o = 1'b0;
   rega_used_o = 1'b0;
+  regfile_alu_we = 1'b0;
 end
 ```
-This code sets input control signals for accelerator, enable and reset, disables alu and defines using of operands a and b.
-Naturally, cumm_en and cumm_rst are new singals and should be defined in same place and in same way as alu_en is defined.
+This code sets input control signals for cumulative mul accelerator, enable, get and reset, disables alu and defines using of operands a and b.
+There is a need for get signal, because there will be a case when cumulative multiplying should'nt be done, but the result of our accelerator should be fowarded into destination register.
+rega_used_o and regb_used_o are signals that are useful for control and forwarding, since some instructions use three, two, one or no operands.
+regfile_alu_we is signal that decides if result of some instruction will be written back to register file (write enable).
+Since result will be written to registar file only in cget function, only there should be regfile_alu_we = 1'b1.
+Naturally, cml_en, cml_get and cml_rst are new singals and should be defined in same place and in same way as alu_en is defined.
+They can have any name, but I was not mature enough go to with first 3 letters.
 Also at the beginning of first always_comb, under alu_en = 1'b1; should also be added:<br>
-cumm_en  = 1'b0;<br>
-cumm_rst = 1'b0;<br>
+cml_en  = 1'b0;<br>
+cml_get  = 1'b0;<br>
+cml_rst = 1'b0;<br>
 This is default value, so in other instructions, our accelerator is not enabled and is not reseted.<br>
-Since cumm_en and cumm_rst are new signals, they should aslso be outputs ofcv32e40p_decoder, so in module definition this code should be added:<br>
+Since cml_en and cml_rst are new signals, they should aslso be outputs ofcv32e40p_decoder, so in module definition this code should be added:<br>
 
 ```verilog
 // CUMULATIVE signals
-output logic        cumm_en_o, 
-output logic        cumm_rst_o, 
+output logic        cml_en_o, 
+output logic        cml_rst_o,
+output logic        cml_get_o,  
 ```
 Finally, at the end of ofcv32e40p_decoder module, this code should be added, to connect variables with output signals.<br>
 
 ```verilog
-assign cumm_en_o                   = (deassert_we_i) ? 1'b0          : cumm_en;
-assign cumm_rst_o                  = (deassert_we_i) ? 1'b0          : cumm_rst;
+assign cml_en_o                   = (deassert_we_i) ? 1'b0          : cml_en;
+assign cml_rst_o                  = (deassert_we_i) ? 1'b0          : cml_rst;
+assign cml_get_o                  = (deassert_we_i) ? 1'b0          : cml_get;
 ```
 
 And thats it for ofcv32e40p_decoder module.<br>
 Now, since this module is integrated into cv32e40p_id_stage, and 2 more outputs of ofcv32e40p_decoder were added, there should also be added this code:<br>
 ```verilog
-.cumm_en_o(cumm_en), 
-.cumm_rst_o(cumm_rst),
+.cml_en_o(cml_en),
+.cml_get_o(cml_en), 
+.cml_rst_o(cml_rst),
 ```
-Where cumm_en and cumm_rst are new variables, that should be created following the example of alu_en.<br>
+Where cml_en and cml_rst are new variables, that should be created following the example of alu_en.<br>
 
 At the ID-EX pipeline in cv32e40p_id_stage, where local variables are connected to output signals this code should be added:<br>
 
 ```verilog
-cumm_en_ex_o <= cumm_en; 
-if (cumm_en) begin
-   cumm_operand_a_ex_o <= alu_operand_a;
-   cumm_operand_b_ex_o <= alu_operand_b;
-   cumm_rst_ex_o       <= cumm_rst;
+cml_en_ex_o <= cml_en;
+cml_get_ex_o <= cml_en;  
+if (cml_en) begin
+   cml_operand_a_ex_o <= alu_operand_a;
+   cml_operand_b_ex_o <= alu_operand_b;
+   cml_rst_ex_o       <= cml_rst;
 end
 ```
-Where again, cumm_operand_a_ex_o, cumm_operand_b_ex_o, cumm_en_ex_o, cumm_rst_ex_o are new output singnals of cv32e40p_id_stage and should be created following the example of alu_en_ex_o.<br>
-cumm_operand_a_ex_o and cumm_operand_b_ex_o are connected to alu_operand_a and alu_operand_b because it vas convenient.<br>
+Where again, cml_operand_a_ex_o, cml_operand_b_ex_o, cuml_en_ex_o, cml_rst_ex_o are new output singnals of cv32e40p_id_stage and should be created following the example of alu_en_ex_o.<br>
+cml_operand_a_ex_o and cml_operand_b_ex_o are connected to alu_operand_a and alu_operand_b because it vas convenient.<br>
 In ofcv32e40p_decoder new signals could be made following the example of alu_operand_a and alu_operand_b but they would do the same job, just have a different name. So just using alu_operand_b and alu_operand_b was easier.<br>
 Also at same ID-EX pipeline under if (rst_n == 1'b0) those new output signals should all be resetted to 0.<br>
 
 Also bellow that code alu_en is used with other enable signals to check that instruction after taken branch is flushed and that EX stage is ready to receive flushed instruction immediately.<br>
 And to check that illegal instruction has no other side effects.<br>
-There should also be added cumm_en following the example of alu_en.<br>
+There should also be added cml_en following the example of alu_en.<br>
 
 Finally there is one part of code where:<br>
 
@@ -659,9 +675,10 @@ Finally there is one part of code where:<br>
 ```
 
 It could be found by searching for those comments.<br>
-This line hould be added there:<br>
+This lines hould be added there:<br>
 ```verilog
-cumm_en_ex_o          <= 1'b0;
+cml_en_ex_o          <= 1'b0;
+cml_get_ex_o          <= 1'b0;
 ```
 
 And thats all of the changes for cv32e40p_id_stage.<br>
@@ -672,10 +689,61 @@ Those new local variables only connect new cv32e40p_id_stage signals to cv32e40p
 So new input signals in cv32e40p_ex_stage should be created.<br>
 
 ```verilog
-input logic        [31:0] cumm_operand_a_i,
-input logic        [31:0] cumm_operand_b_i,
-input logic               cumm_en_i,
-input logic               cumm_rst_i,
+input logic        [31:0] cml_operand_a_i,
+input logic        [31:0] cml_operand_b_i,
+input logic               cml_en_i,
+input logic               cml_get_i,
+input logic               cml_rst_i,
 ```
 
-Now is the time to start writing cummulative accelerator.
+Now is the time to start writing cumulative accelerator.
+Its very simlple and short that i dont even need to put it in separate file:
+
+```verilog
+module cv32e40p_cumulative #(
+  //
+) (
+  input  logic        clk_i,
+  input  logic        rst_n_global_i,
+  input  logic        rst_p_forced_i,
+  input  logic        en_i,
+  input  logic [31:0] a_i,
+  input  logic [31:0] b_i,
+  output logic [31:0] result_o
+);
+
+  logic [63:0] product;
+  logic [31:0] product_shift;
+  logic [31:0] result;
+
+  assign product = a_i * b_i;
+  assign product_shift = product[47:16];
+
+  always_ff @(posedge clk_i or negedge rst_n_global_i or posedge rst_p_forced_i) begin
+    if      (!rst_n_global_i || rst_p_forced_i) result <= 32'b0;
+    else if (en_i)                              result <= result + product_shift;
+  end
+  assign result_o = result; 
+
+endmodule  // cv32e40p_cumulative
+```
+Its pretty much self explanatory.
+Integrating it in cv32e40p_ex_stage is also simple and can be done by following the example of alu.
+Output should be connected to output of cv32e40p_ex_stage in this part of code:
+
+```verilog
+...
+    end else begin
+      regfile_alu_we_fw_o    = regfile_alu_we_i & ~apu_en_i;  // private fpu incomplete?
+      regfile_alu_waddr_fw_o = regfile_alu_waddr_i;
+      if (alu_en_i) regfile_alu_wdata_fw_o = alu_result;
+      if (cml_en_i || cml_get_i) regfile_alu_wdata_fw_o = cml_result;
+      if (mult_en_i) regfile_alu_wdata_fw_o = mult_result;
+      if (csr_access_i) regfile_alu_wdata_fw_o = csr_rdata_i;
+    end
+...
+```
+And thats it.
+Before building rtl code, new accelerator module should be added into bender.yml file in pulpissimo/working_dir/cv32e40p.
+Now terminal should be opened from pulpissimo folder, and rtl code should be builded with command make build.
+Any potential error in code will be shown there.
