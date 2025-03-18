@@ -745,8 +745,7 @@ module cv32e40p_cumulative #(
 endmodule  // cv32e40p_cumulative
 ```
 Its pretty much self explanatory.
-Integrating it in cv32e40p_ex_stage is also simple and can be done by following the example of alu.
-Output should be connected to output of cv32e40p_ex_stage in this part of code:
+ntegrating it into cv32e40p_ex_stage is also simple and can be done by following the example of the ALU. The output should be connected to the output of cv32e40p_ex_stage in this part of the code:
 
 ```verilog
 ...
@@ -761,42 +760,42 @@ Output should be connected to output of cv32e40p_ex_stage in this part of code:
 ...
 ```
 And thats it.
-Before building rtl code, new accelerator module should be added into bender.yml file in pulpissimo/working_dir/cv32e40p.
-Now terminal should be opened from pulpissimo folder, and rtl code should be builded with command make build.
-Any potential error in code will be shown there.
+Before building the RTL code, the new accelerator module should be added to the bender.yml file in pulpissimo/working_dir/cv32e40p.
+Next, open a terminal from the pulpissimo folder, and build the RTL code using the command make build.
+Any potential errors in the code will be displayed there.
 
-## Cofiguring gcc so it recognises new instructions
+## Configuring GCC to recognize new instructions
 
-In location : riscv-gnu-toolchain/riscv-binutils/opcodes open riscv-opt.c<br>
-There under this struct: struct riscv_opcode riscv_opcodes[] theese lines should be added 
-...c
+In the directory riscv-gnu-toolchain/riscv-binutils/opcodes, open the file riscv-opc.c.
+Under the struct struct riscv_opcode riscv_opcodes[], add the following lines:
+```c
 {"cmul",  	0, INSN_CLASS_I,   "s,t",  MATCH_CMUL, MASK_CMUL, match_opcode, 0 },
 {"cget",  	0, INSN_CLASS_I,   "d",  MATCH_CGET, MASK_CGET, match_opcode, 0 },
 {"crst",  	0, INSN_CLASS_I,   "",  MATCH_CRST, MASK_CRST, match_opcode, 0 },
-...
+```
 
-- First 0 means that instruction is 32 bit. If it is 64 bit, there should be 64 instead of 0.
-- INSN_CLASS_I means that instructuion is from standard instruction set.
-- "s,t" means that instruction has 2 source registers, but nothing else. s = first source register, t = second source register.
-- "d" means that instruction has only one destination register.
-- "" means that instruction uses no registers at all.
-- MATCH_CMUL, MASK_CMUL, MATCH_CGET, MASK_CGET, MATCH_CRST, MASK_CRST are constants that are gonna be defined in another file.
-- match_opcode is a function that will be called that will use those constants.
-- Last 0 is for additional advanced fuctions that are not used in theese instructions.
+- The first 0 indicates that the instruction is 32-bit. If it were 64-bit, it should be replaced with 64.
+- INSN_CLASS_I means that the instruction belongs to the standard instruction set.
+- "s,t" means that the instruction has two source registers (s = first source register, t = second source register).
+- "d" means that the instruction has only one destination register.
+- "" means that the instruction uses no registers at all.
+- MATCH_CMUL, MASK_CMUL, MATCH_CGET, MASK_CGET, MATCH_CRST, and MASK_CRST are constants that will be defined in another file.
+- match_opcode is a function that will be called to use these constants.
+- The last 0 is reserved for additional advanced functions, which are not used in these instructions.
 
 Save changes in this file.
 
 Next in location : riscv-gnu-toolchain/riscv-binutils/include/opcode open riscv-opc.h<br>
 At the top (or anywhere else) of the code, theese lines should be added
 
-...c
+```c
 #define MATCH_CMUL 0x20000033
 #define MASK_CMUL 0xFE007FFF
 #define MATCH_CGET 0x20001033
 #define MASK_CGET 0xFFFFF07F
 #define MATCH_CRST 0x20002033
 #define MASK_CRST 0xFFFFFFFF
-...
+```
 
 For every instruction, constants MATCH_<instruction_name> nad MASK_<instruction_name> should be defined.
 MATCH_<instruction_name> and MASK_<instruction_name> have the same number of bits as the instruction.
@@ -811,8 +810,8 @@ Save changes in this file.<br>
 
 Open terminal in location /riscv-gnu-toolchain.<br>
 Run this commands:
-...
+```
 make clean
 make
-...
+```
 This will take some time. About 2 hours.
