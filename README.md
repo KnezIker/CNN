@@ -574,7 +574,7 @@ The Riscy core is made up of separate units and pipeline stages, following a cla
 <br>
 
 Since there will be no changes to the core, the instruction fetch stage (if_stage) will remain unchanged.
-The only changes that will be made are in the:
+The only changes that will be made are in the files:
 ```
 cv32e40p_core 		    (changed)
 └── cv32e40p_id_stage       (changed)
@@ -596,9 +596,9 @@ WRITE BRIEF DESCRIPTION ON HOW id stage works*/
 
 The good starting point is cv32e40p_decoder.<br>
 There under:<br>
-unique case (instr_rdata_i[6:0])
+unique case (instr_rdata_i[6:0])<br>
 under:<br>
-OPCODE_OP
+OPCODE_OP<br>
 under:<br>
 // PREFIX 00/01<br>
 else begin<br>
@@ -633,27 +633,26 @@ end
   regfile_alu_we = 1'b0;
 end
 ```
-This code sets input control signals for cumulative mul accelerator, enable, get and reset, disables alu and defines using of operands a and b.
-There is a need for get signal, because there will be a case when cumulative multiplying should'nt be done, but the result of our accelerator should be fowarded into destination register.
-rega_used_o and regb_used_o are signals that are useful for control and forwarding, since some instructions use three, two, one or no operands.
-regfile_alu_we is signal that decides if result of some instruction will be written back to register file (write enable).
-Since result will be written to registar file only in cget function, only there should be regfile_alu_we = 1'b1.
-Naturally, cml_en, cml_get and cml_rst are new singals and should be defined in same place and in same way as alu_en is defined.
-They can have any name, but I was not mature enough go to with first 3 letters.
-Also at the beginning of first always_comb, under alu_en = 1'b1; should also be added:<br>
+This code sets input control signals for cumulative mul accelerator: enable, get, and reset. It disables ALU and defines the use of operands a and b.
+There is a need for the get signal because there will be cases when cumulative multiplying shouldn't be done, but the result of our accelerator should be forwarded into the destination register.
+rega_used_o and regb_used_o are signals that are useful for control and forwarding, since some instructions use three, two, one, or no operands.
+regfile_alu_we is a signal that decides if the result of some instruction will be written back to the register file (write enable).
+Since the result will be written to the register file only in the cget function, only there should regfile_alu_we = 1'b1.
+Naturally, cml_en, cml_get, and cml_rst are new signals and should be defined in the same place and in the same way as alu_en is defined.
+They can have any name, but I was not mature enough to go with the first 3 letters.
+Also, at the beginning of the first always_comb, under alu_en = 1'b1, this should also be added:<br>
 cml_en  = 1'b0;<br>
 cml_get  = 1'b0;<br>
 cml_rst = 1'b0;<br>
-This is default value, so in other instructions, our accelerator is not enabled and is not reseted.<br>
-Since cml_en and cml_rst are new signals, they should aslso be outputs ofcv32e40p_decoder, so in module definition this code should be added:<br>
-
+These are default values, so in other instructions, our accelerator is not enabled and is not reset.<br>
+Since cml_en and cml_rst are new signals, they should also be outputs of cv32e40p_decoder, so in the module definition this code should be added:<br>
 ```verilog
 // CUMULATIVE signals
 output logic        cml_en_o, 
 output logic        cml_rst_o,
 output logic        cml_get_o,  
 ```
-Finally, at the end of ofcv32e40p_decoder module, this code should be added, to connect variables with output signals.<br>
+Finally, at the end of the cv32e40p_decoder module, this code should be added to connect variables with output signals.<br>
 
 ```verilog
 assign cml_en_o                   = (deassert_we_i) ? 1'b0          : cml_en;
@@ -661,17 +660,15 @@ assign cml_rst_o                  = (deassert_we_i) ? 1'b0          : cml_rst;
 assign cml_get_o                  = (deassert_we_i) ? 1'b0          : cml_get;
 ```
 
-And thats it for ofcv32e40p_decoder module.<br>
-Now, since this module is integrated into cv32e40p_id_stage, and 2 more outputs of ofcv32e40p_decoder were added, there should also be added this code:<br>
+And that's it for the cv32e40p_decoder module.<br>
+Now, since this module is integrated into cv32e40p_id_stage, and 2 more outputs of the cv32e40p_decoder were added, there should also be added this code:<br>
 ```verilog
 .cml_en_o(cml_en),
 .cml_get_o(cml_en), 
 .cml_rst_o(cml_rst),
 ```
 Where cml_en and cml_rst are new variables, that should be created following the example of alu_en.<br>
-
 At the ID-EX pipeline in cv32e40p_id_stage, where local variables are connected to output signals this code should be added:<br>
-
 ```verilog
 cml_en_ex_o <= cml_en;
 cml_get_ex_o <= cml_en;  
@@ -681,24 +678,21 @@ if (cml_en) begin
    cml_rst_ex_o       <= cml_rst;
 end
 ```
-Where again, cml_operand_a_ex_o, cml_operand_b_ex_o, cuml_en_ex_o, cml_rst_ex_o are new output singnals of cv32e40p_id_stage and should be created following the example of alu_en_ex_o.<br>
-cml_operand_a_ex_o and cml_operand_b_ex_o are connected to alu_operand_a and alu_operand_b because it vas convenient.<br>
-In ofcv32e40p_decoder new signals could be made following the example of alu_operand_a and alu_operand_b but they would do the same job, just have a different name. So just using alu_operand_b and alu_operand_b was easier.<br>
-Also at same ID-EX pipeline under if (rst_n == 1'b0) those new output signals should all be resetted to 0.<br>
-
-Also bellow that code alu_en is used with other enable signals to check that instruction after taken branch is flushed and that EX stage is ready to receive flushed instruction immediately.<br>
+Where again, cml_operand_a_ex_o, cml_operand_b_ex_o, cuml_en_ex_o, cml_rst_ex_o are new output signals of cv32e40p_id_stage and should be created following the example of alu_en_ex_o.<br>
+cml_operand_a_ex_o and cml_operand_b_ex_o are connected to alu_operand_a and alu_operand_b because it was convenient.<br>
+In cv32e40p_decoder new signals could be made following the example of alu_operand_a and alu_operand_b but they would do the same job, just have a different name. So just using alu_operand_b and alu_operand_b was easier.<br>
+Also at the same ID-EX pipeline under if (rst_n == 1'b0) those new output signals should all be reset to 0.<br>
+Also below that code alu_en is used with other enable signals to check that instruction after taken branch is flushed and that EX stage is ready to receive flushed instruction immediately.<br>
 And to check that illegal instruction has no other side effects.<br>
 There should also be added cml_en following the example of alu_en.<br>
-
 Finally there is one part of code where:<br>
-
 ```verilog
 //EX stage is ready but we don't have a new instruction for it, 
 //so we set all write enables to 0, but unstall the pipe
 ```
 
 It could be found by searching for those comments.<br>
-This lines hould be added there:<br>
+These lines should be added there:<br>
 ```verilog
 cml_en_ex_o          <= 1'b0;
 cml_get_ex_o          <= 1'b0;
@@ -720,7 +714,7 @@ input logic               cml_rst_i,
 ```
 
 Now is the time to start writing cumulative accelerator.
-Its very simlple and short that i dont even need to put it in separate file:
+Its very simlple and short that I dont even need to put it in separate file:
 
 ```verilog
 module cv32e40p_cumulative #(
