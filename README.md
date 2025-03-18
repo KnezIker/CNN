@@ -1,9 +1,10 @@
 # CNN
 ## Project idea
-The idea of this project is to train a simple convolutional neural network (CNN) that detects numbers from 0 to 9 in grayscale images with 8-bit pixels, in python.
+The idea of this project is to train a simple convolutional neural network (CNN) in python that detects numbers from 0 to 9 in 28x28 8-bit grayscale images.
 Then, to extract biases and weights.
-After that, to put those weights and biases in C code and run it on the Pulpissimo architecture in the cv32e40p RISCY core.
-Finally, to determine which instructions are repeated the most and to create a simple hardware accelerator in the RISCY core for those instructions.
+Then to put those weights and biases in C code and compile it in gcc compiler for the Pulpissimo architecture with cv32e40p RISCY core.
+Finally, to determine which instructions are repeated the most in assembly code and to create a simple hardware accelerator, anlong with custom instructions in the RISCY core that will reduce number of instructions and execution time of program.
+
 ## CNN structure
 This CNN is basically the same as shown in this [YouTube](https://www.youtube.com/watch?v=jDe5BAsT2-Y&t=607s) tutorial:
 
@@ -88,7 +89,6 @@ In the sw folder, there are three main files:<br>
 cnn.py<br>
 cnn.c<br>
 cnn.h<br>
-
 The Python code (cnn.py) creates a CNN model, trains it on the MNIST dataset, converts MNIST images to .pgm format, and generates weights and biases. These weights, biases, and images are saved in different formats.<br>
 There are two formats for storing data:<br>
 Human-readable format: Data is stored in .txt files, intended for human inspection.<br>
@@ -100,7 +100,7 @@ For this detection, the C code uses functions defined in the cnn.h file.<br>
 At the top of the cnn.h file, there are comments describing how to switch between fixed-point and floating-point arithmetic.<br>
 The next step is to analyze which instructions are repeated most frequently and create a hardware accelerator for them, turning them into custom instructions.
 <br>
-To achieve this, the .c and .h code will be converted into RISC-V assembly code. The RISC-V assembly code is chosen because the goal is to run it on the PULPissimo platform. The same GCC compiler provided by PULPissimo is used for this purpose (see the setup guide [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
+To achieve this, the .c and .h code will be converted into RISC-V assembly code. The RISC-V assembly code is chosen because the goal is to run it on the pulpissimo platform. The same GCC compiler provided by pulpissimo is used for this purpose (see the setup guide [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
 Storing weights, biases, and images in Python as .txt or .csv files and then reading them in C works well when running the C code on a PC. However, this approach is less suitable for microcontrollers, as some libraries (e.g., dirent.h) are not available for RISC-V compilers.<br>
 While it is possible to transfer the data to the microcontroller via UART, a more elegant solution is to embed the data directly into another .h file and include it in the C code. This is why the Python script also generates a values.h file.<br>
 For now, values.h is only available in fixed-point format, but it can easily be modified to support floating-point data if needed.
@@ -153,6 +153,9 @@ pooling2<br>
 calc_layer_5_outputs<br>
 
 ## calc_layer_0_Channels function<br>
+
+This function performs layer 0 convolution with image and two kernels the same way as described earlier and as shown in referenced youtube video.
+
 main assembly code:
 ```assembly
 calc_layer_0_Channels:
@@ -194,7 +197,8 @@ c code:
         }
     }
 ```
-So for now assembly code initialised input values, and did  int32_t temp = 0 and int i = 0, and in next step it jumps to fisrt for loop at .L93<br>
+For now assembly code initialized input values, and initialised temp and i variables to  0, and in next step it jumps to first for loop at .L93
+<br>
 .L93 assembly code:
 ```assembly
 .L93:
@@ -209,15 +213,14 @@ So for now assembly code initialised input values, and did  int32_t temp = 0 and
 	addi	sp,sp,64       # Free 64 bytes from the stack
 	jr	ra             # Return from the function
 ```
-This code sets boundaries of i for loop, and ensures correct return from calc_layer_0_Channels function.
-Loop will be performed twice, since initial value of i is 0, and loop will jump to .L102 while i <= 1.<br>
+This code sets the boundaries for the i loop and ensures the correct return from the calc_layer_0_Channels function. The loop will execute twice since the initial value of i is 0, and it will jump to .L102 as long as i ≤ 1.<br>
 .L102 assembly code:
 ```assembly
 .L102:
 	sw	zero,-28(s0)      # Initialize loop counter (j = 0) on the stack
 	j	.L94              # jump to .L94
 ```
-This code initializes j counter to 0 and jumps to .L94<br>
+This code initializes the j counter to 0 and jumps to .L94
 .L94 assembly code:
 ```assembly
 .L94:
@@ -228,16 +231,14 @@ This code initializes j counter to 0 and jumps to .L94<br>
 	addi	a5,a5,1        # Increment i
 	sw	a5,-24(s0)     # Store value of the loop counter (i) on the stack
 ```
-This code sets boundaries of for j for loop, and increments i counter by 1.
-This loop will be performed 24 times, since initial value of j is 0 and loop will jump to .L101 while j <= 23.<br>
-There is no jr ra instruction, because .L94 assembly code is directly above .L93 so when its done it will automatically go back to .L93<br>
+This code sets the boundaries for the j loop and increments the i counter by 1. The loop will execute 24 times since the initial value of j is 0, and it will jump to .L101 as long as j ≤ 23. There is no jr ra instruction because the assembly code for .L94 is directly above .L93, so once execution is complete, it will automatically return to .L93.
 .L101 assembly code:
 ```assembly
 .L101:
 	sw	zero,-32(s0)      # Initialize loop counter k = 0) on the stack
 	j	.L95              # jump to .L95
 ```
-This code initializes k counter to 0 and jumps to .L95<br>
+This code initializes the k counter to 0 and jumps to .L95<br>
 .L95 assembly code:
 ```assembly
 .L95:
@@ -248,14 +249,14 @@ This code initializes k counter to 0 and jumps to .L95<br>
 	addi	a5,a5,1        # Increment j
 	sw	a5,-28(s0)     # Store value of the loop counter (j) on the stack
 ```
-This code does the same to k for loop as .L94 did for j loop. Also its drectly above of .L94<br>
+his code handles the k loop in the same way that .L94 handles the j loop. Additionally, it is located directly above .L94.<br>
 .L100 assembly code:
 ```assembly
 .L100:
 	sw	zero,-36(s0)      # Initialize loop counter g = 0) on the stack
 	j	.L96              # jump to .L96
 ```
-This code initializes g counter to 0 and jumps to .L96<br>
+This code initializes the g counter to 0 and jumps to .L96<br>
 .L96 assembly code:
 ```assembly
 .L96:
@@ -308,27 +309,26 @@ This code initializes g counter to 0 and jumps to .L96<br>
 	sw	a5,-32(s0)     # Store value of the loop counter (k) on the stack
 ```
 
-.L96 is a little bit different because it has to:<br>
-Same work as other for loops:
-- Set g for loop boundaries
-- Increment k counter
+.L96 is slightly different because it has to perform the following tasks:<br>
+Same tasks as other for loops:
+- Set the boundaries for the g loop
+- Increment the k counter
   
-Additional work:
-- Calculate address of LOB[i]
+Additional tasks:
+- Calculate the address of LOB[i]
 - Sum tmp and LOB[i]
-- Calculate address of LOC[i][j][k]
-- Call ReLu function
+- Calculate the address of LOC[i][j][k]
+- Call the ReLU function
 
-Now this is standard procedure when dealing with tensors, but there is a lot of instructions here that could be accelerated in some dedicated hardware accelerator. Also .L96 code is directly above .L95 code.
-However this still isn't the end of code.
-Before .L96 goes trough any of code mentioned above, it goes trouth .L99 loop.<br>
+This is a standard procedure when working with tensors, but many of these instructions could be accelerated using dedicated hardware. Additionally, the .L96 code is located directly above .L95.
+However, this is still not the end of the code. Before .L96 executes any of the operations mentioned above, it first goes through the .L99 loop.<br>
 .L99 assembly code:
 ```assembly
 .L99:
 	sw	zero,-40(s0)      # Initialize loop counter u = 0) on the stack
 	j	.L97              # jump to .L97
 ```
-This code initializes u counter to 0 and jumps to .L97<br>
+This code initializes the u counter to 0 and jumps to .L97<br>
 .L97 assembly code:
 ```assembly
 .L97:
@@ -339,7 +339,7 @@ This code initializes u counter to 0 and jumps to .L97<br>
 	addi	a5,a5,1		# Increment g
 	sw	a5,-36(s0)      # Store value of the loop counter (g) on the stack
 ```
-This code does the same to u for loop as .L94 did for j loop. Also its drectly above of .L96<br>
+This code handles the u loop in the same way that .L94 handles the j loop. Additionally, it is located directly above .L96.<br>
 .L98 assembly code:
 ```assembly
 .L98:
@@ -392,9 +392,8 @@ This code does the same to u for loop as .L94 did for j loop. Also its drectly a
 	addi	a5,a5,1		  # Increment (u) by 1
 	sw	a5,-40(s0)	  # Store the updated value of (u)
 ```
-Again like before, most of the code corresponds to calculating addresses of L0K[i][g][u] and IMG[g + j][u + k].
-Also, this code is directly above .L97.
-The only thing left to do now is to go trough mul function.<br>
+As before, most of the code is responsible for calculating the addresses of L0K[i][g][u] and IMG[g + j][u + k]. Additionally, this code is located directly above .L97.<br>
+The only remaining step is to go through the mul function.<br>
 .mul assembly code:
 ```assembly
 mul:
@@ -429,51 +428,66 @@ mul:
 	addi	sp,sp,32	# Deallocate 32 bytes from the stack
 	jr	ra		# Return from the function
 ```
-Now this is a lot of code. Luckily there is no need to understand it all. Hardware accelerator of this code would work differently anyways.<br>
-But there are 30 instructions here. Each instruction is one cycle instructions + 2 mul instructions that are usualy 5 cycle instructions.<br>
-In total 38 cycles just for one mul function.<br>
-The code that calls mul function, .L98 has 44 cycles without mul, so in total 38 + 44 = 82 cycles.<br>
+Now, this is a lot of code. Fortunately, there is no need to understand every detail, as a hardware accelerator for this computation would operate differently.<br>
 
-.L98 code will run L0_KERNEL_DIMENSIONS = 5 times, alongside with .L97 code that calls it.<br>
-.L97 code has 3 instructions that will loop, so in total that is (38 + 44 + 3)*5 = 425 cycles.<br>
-.L97 code is called by .L99 wich adds aditional 2 instructions, which is called by .L96 which adds aditional 3 instructions<br>
-So in total ((38 + 44 + 3)*5 + 2 + 3) = 430 cycles.<br>
+However, there are 32 instructions in this section, each executing in a single cycle each.
 
-.L99 code will be calld by .L96 L0_KERNEL_DIMENSIONS = 5 times, so in total ((38 + 44 + 3)*5 + 2 + 5)*5 = 2160 cycles.<br>
-.L96 code brings additional 32 instructions, so in total ((38 + 44 + 3)*5 + 2 + 5)*5 + 32 = 2192 cycles.<br>
-.L96 code is called by .L100 wich adds aditional 2 instructions, which is called by .L95 which adds aditional 3 instructions<br>
-So in total ((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5 = 2197 cycles.<br>
+The code that calls the mul function, .L98, takes 44 cycles on its own, so the total execution time for .L98 including mul is:<br>
+32 + 44 = 76 cycles.<br>
 
-.L100 code will be calld by .L95 L0_CHANNEL_WITH = 28 times, so in total (((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 = 61516 cycles.<br>
-.L95 code brings additional 3 instructions, so in total (((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 = 61519 cycles.<br>
-.L95 code is called by .L101 wich adds aditional 2 instructions, which is called by .L94 which adds aditional 3 instructions<br>
-so in total (((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5 = 61524 cycles.<br>
+The .L98 code runs L0_KERNEL_DIMENSIONS = 5 times, alongside .L97, which calls it.<br>
+Since .L97 has 3 additional loop instructions, the total cycle count is:<br>
+(32 + 44 + 3) * 5 = 395 cycles.<br>
 
-.L101 code will be calld by .L94 L0_CHANNEL_WITH = 28 times, so in total ((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 = 1722672 cycles.<br>
-.L94 code brings additional 3 instructions, so in total ((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 = 1722675 cycles.<br>
-.L94 code is called by .L102 wich adds aditional 2 instructions, which is called by .L93 which adds aditional 3 instructions<br>
-so in total ((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 + 5 = 1722680 cycles.<br>
+The .L97 code is called by .L99, adding 2 more instructions, and .L99 is called by .L96, adding another 3 instructions:<br>
+((32 + 44 + 3) * 5 + 2 + 3) = 400 cycles.<br>
 
-.L102 code will be calld by .L93 L0_NUMBER_OF_KERNELS = 2 times,<br>
-so in total (((((38 + 44 + 3)*5 + 2 + 5)*5 + 32 + 5)*28 + 3 + 5)*28 + 3 + 5)*2 = 3445360 cycles.<br>
+The .L99 code is called by .L96 L0_KERNEL_DIMENSIONS = 5 times, giving:<br>
+((32 + 44 + 3) * 5 + 2 + 5) * 5 = 2000 cycles.<br>
 
-Finally, .L93 is called by calc_layer_0_Channels which add another 12 cycles.<br>
-Giving grand total of around 3,445,372 cycles, just for first layer 0 calculation.
+The .L96 code itself introduces 32 additional instructions, so:<br>
+((32 + 44 + 3) * 5 + 2 + 5) * 5 + 32 = 2032 cycles.<br>
+
+The .L96 code is called by .L100, adding 2 more instructions, and .L100 is called by .L95, adding another 3:<br>
+((32 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5 = 2037 cycles.<br>
+
+The .L100 code runs L0_CHANNEL_WIDTH = 28 times, resulting in:<br>
+(((32 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 = 57,036 cycles.<br>
+
+The .L95 code itself adds 3 more instructions, so:<br>
+(((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 = 57,039 cycles.<br>
+
+The .L95 code is called by .L101, adding 2 more instructions, and .L101 is called by .L94, adding another 3:<br>
+(((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5 = 57,044 cycles.<br>
+
+The .L101 code runs L0_CHANNEL_WIDTH = 28 times, leading to:<br>
+((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 = 1,597,232 cycles.<br>
+
+The .L94 code introduces 3 more instructions, so:<br>
+((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 + 3 = 1,597,235 cycles.<br>
+
+The .L94 code is called by .L102, adding 2 more instructions, and .L102 is called by .L93, adding another 3:<br>
+((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 + 3 + 5 = 1,597,240 cycles.<br>
+
+The .L102 code runs L0_NUMBER_OF_KERNELS = 2 times, so:<br>
+(((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 3,194,480 cycles.<br>
+
+Finally, .L93 is called by calc_layer_0_Channels, which adds 12 more cycles, resulting in:<br>
+≈ 3,194,492  cycles just for the first layer calculation.<br>
 
 <div align="center">
   <img src="doc/ALotOfCycles.png" alt="Opis slike" width="300" />
 </div>
 
-So the idea is to make hardware accelerator, that will do mul function, as well as cumulating result, in (hopefully) less than 6 cycles.<br>
-Basically, to make this instruction:<br>
+The idea is to create a hardware accelerator that will perform the mul function, as well as accumulate the result, in (hopefully) less than around 4 cycles.<br>
+Basically, to make this code:<br>
 ```c
 temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);
 ```
-hardvare accelerated.
-
+hardware accelerated.
 ## Definition of hardware accelerator and custom instructions
 
-Hardware Accelerator, should be defined as:<br>
+The Hardware Accelerator should be defined as:
 ```verilog
 input  logic 	    clk
 input  logic 	    rst
@@ -487,70 +501,71 @@ output logic [31:0] result
   <img src="doc/HA_Cmul.png" alt="Opis slike" width="300" />
 </div>
 <br>
-And there should be at least 3 coustom instructions for it:<br>
+And there should be at least 3 custom instructions for it:<br>
 Cmul a, b<br>
-Which brings operands a and b to accelerator and enables it.<br>
+This instruction brings operands a and b to the accelerator and enables it.<br>
 Cget rx<br>
-Which takes the result of accelerator and sotres it in rx register<br>
+This instruction takes the result from the accelerator and stores it in the rx register.<br>
 Crst<br>
-Which resets the accelerator.
+This instruction resets the accelerator.<br>
 
-### codes for custom instructions
+### Codes for custom instructions
 
-There is a lot of room for improovements and creativity here. But since this is just a foundation for my bachelor's thesis, and not some high end company product, there is only a need for this conditions to be met:
+There is a lot of room for improvement and creativity here. But since this is just a foundation for my bachelor's thesis, and not a high-end company product, there is only a need for the following conditions to be met:
 
-- Code must not overlap with some existing code for other *Standard* or *Pulp extended* instructions
-- Code should leave space for about 5 or 6 aditional instructions
-- All added codes should be grouped in some way (quality of life condition, optional)
+- The code must not overlap with any existing code for other Standard or Pulp extended instructions.
+- he code should leave space for about 5 or 6 additional instructions.
+- All added code should be grouped in some way (quality of life condition, optional).
 
-Opcode that meets those conditins, (amoung others) is 0110011 i.e. opcode for add instruction.<br>
-Now funct7 should be choosen.<br>
-11 and 10 for first two bits of funct7 is already taken by Puplp extensions.<br>
-0000000 and 0100000 is also taken by standard RV32I alu instructions.<br>
-01xxxxx and 000xxxx is taken by pulp instructions. Not all x bits are taken, and there are probably holes that could be used, but that involves aditional brain power which is already limited.<br>
-0000001 is also taken for M extension.<br>
-Now that leaves us with a lot of free space.<br>
-For organisational reasosns and to make things simpler this will be funct7 space for instructions 001xxxx.<br>
-So 001 0000 < funct7 < 001 1111.<br>
-That is 16 funct7 codes and every funct7 code has 3 bits for func3 so in total 16*8 = 128 which is enough even to make separate instruction set.
+An opcode that meets these conditions (among others) is 0110011, i.e. the opcode for the add instruction.
+Now, funct7 should be chosen.
 
-So codes for starting 3 instructions should look like this:
+The first two bits of funct7 (11 and 10) are already taken by the Pulp extensions.
+0000000 and 0100000 are also taken by standard RV32I ALU instructions.
+01xxxxx and 000xxxx are taken by Pulp instructions. Not all the x bits are taken, and there are probably holes that could be used, but that requires additional brain power, which is already limited.
+0000001 is also taken for the M extension.
 
+Now, that leaves us with a lot of free space.
+For organizational reasons and to make things simpler, this will be the funct7 space for instructions: 001xxxx.
+So, 001 0000 < funct7 < 001 1111.
+That is 16 funct7 codes, and every funct7 code has 3 bits for funct3, so in total, 16 * 8 = 128 instructions, which is enough to create a separate instruction set.
+
+So, the codes for the first 3 instructions should look like this:
 <br>
 <div align="center">
   <img src="doc/Codes.png" alt="Opis slike" width="1100" />
 </div>
 <br>
 
-## Preparing cv32e40p core for accelerator
+## Preparing the cv32e40p core for the accelerator
 
-From this point on, most of the work will be done in verilog (fun part).
-Goal is to modify cv32e40p core of pulpissimo to run our custom instruction on custom hardware accelerator.
-But to modify cv32e40p core, one firstly needs to open it.
-Detailed instructions for installing pulpissimo could be found [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
-If doing this for the first time, expect to spend some time on it.
-When pulpissimo is downloaded, and set up files for cv32e40p core could be found by opening terminal from pulpissimo/utils/bin and typing command:
+From this point on, most of the work will be done in Verilog (the fun part).
+The goal is to modify the cv32e40p core of Pulpissimo to run our custom instruction on the custom hardware accelerator.
+However, to modify the cv32e40p core, one must first open it.
+Detailed instructions for installing pulpissimo can be found [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
+If this is your first time, expect to spend some time on it.
+Once Pulpissimo is downloaded, the files for the cv32e40p core can be found by opening the terminal from pulpissimo/utils/bin and typing the command:
+
 ```
 /bender packages --flat
 ```
-Next, type this command:
+Next, type in this command:
 ```
 for pkg in $(./bender packages --flat); do
     ./bender clone "$pkg"
 done
 ```
-This will create working_dir folder in pulpissimo folder, and all pulpissimo rtl files will be there, in separate folders.
-cv32e40p files are in pulpissimo/working_dir/cv32e40p/rtl folder.
+This will create a working_dir folder in the Pulpissimo folder, and all Pulpissimo RTL files will be there, in separate folders.
+The cv32e40p files are located in pulpissimo/working_dir/cv32e40p/rtl.
 
 ### starting point
-Detailed description and datasheet of cv32e40p could be found here [here](https://github.com/openhwgroup/cv32e40p)).<br> 
-This is just a oversimlified version that covers only things related to this topic.
+A detailed description and datasheet of cv32e40p can be found [here](https://github.com/openhwgroup/cv32e40p)).<br> 
+This is just an oversimplified version that covers only the things related to this topic.
 
 //*TODO:
 MAKE THIS SHORT OVERSIMPLIFIED VERSION A LITTLE BIT LESS OVERSIMPLIFIED*//
 
-Riscy core is made out of separate units and pipeline stages.
-Classic fetch decode execute structure.
+The Riscy core is made up of separate units and pipeline stages, following a classic fetch-decode-execute structure.
 
 <br>
 <div align="center">
@@ -558,9 +573,17 @@ Classic fetch decode execute structure.
 </div>
 <br>
 
-Since we are not changing core of the core, instruction fetch stage (if_stage) will not be changed.
-The only changes that will be made are in instruction decode (id_stage) stage and execute (ex_stage) stage.<br>
-This is how instruction decode stage looks like:
+Since there will be no changes to the core, the instruction fetch stage (if_stage) will remain unchanged.
+The only changes that will be made are in the:
+```
+cv32e40p_core 		    (changed)
+└── cv32e40p_id_stage       (changed)
+    └── cv32e40p_decoder    (changed)
+└── cv32e40p_ex_stage       (changed)
+    └── cv32e40p_cumulative (added)
+```
+
+This is how the instruction decode stage looks:
 
 <br>
 <div align="center">
@@ -747,3 +770,55 @@ And thats it.
 Before building rtl code, new accelerator module should be added into bender.yml file in pulpissimo/working_dir/cv32e40p.
 Now terminal should be opened from pulpissimo folder, and rtl code should be builded with command make build.
 Any potential error in code will be shown there.
+
+## Cofiguring gcc so it recognises new instructions
+
+In location : riscv-gnu-toolchain/riscv-binutils/opcodes open riscv-opt.c<br>
+There under this struct: struct riscv_opcode riscv_opcodes[] theese lines should be added 
+...c
+{"cmul",  	0, INSN_CLASS_I,   "s,t",  MATCH_CMUL, MASK_CMUL, match_opcode, 0 },
+{"cget",  	0, INSN_CLASS_I,   "d",  MATCH_CGET, MASK_CGET, match_opcode, 0 },
+{"crst",  	0, INSN_CLASS_I,   "",  MATCH_CRST, MASK_CRST, match_opcode, 0 },
+...
+
+- First 0 means that instruction is 32 bit. If it is 64 bit, there should be 64 instead of 0.
+- INSN_CLASS_I means that instructuion is from standard instruction set.
+- "s,t" means that instruction has 2 source registers, but nothing else. s = first source register, t = second source register.
+- "d" means that instruction has only one destination register.
+- "" means that instruction uses no registers at all.
+- MATCH_CMUL, MASK_CMUL, MATCH_CGET, MASK_CGET, MATCH_CRST, MASK_CRST are constants that are gonna be defined in another file.
+- match_opcode is a function that will be called that will use those constants.
+- Last 0 is for additional advanced fuctions that are not used in theese instructions.
+
+Save changes in this file.
+
+Next in location : riscv-gnu-toolchain/riscv-binutils/include/opcode open riscv-opc.h<br>
+At the top (or anywhere else) of the code, theese lines should be added
+
+...c
+#define MATCH_CMUL 0x20000033
+#define MASK_CMUL 0xFE007FFF
+#define MATCH_CGET 0x20001033
+#define MASK_CGET 0xFFFFF07F
+#define MATCH_CRST 0x20002033
+#define MASK_CRST 0xFFFFFFFF
+...
+
+For every instruction, constants MATCH_<instruction_name> nad MASK_<instruction_name> should be defined.
+MATCH_<instruction_name> and MASK_<instruction_name> have the same number of bits as the instruction.
+MATCH_<instruction_name> is derived from instruction by putting 0 in bits that represent rs0, rs1 and rd.
+MASK_<instruction_name> is derived from instruction by putting 1 in bits that represent funct7, funct3, opcode and every register that is not used.
+In case of cmul, rd is not used.
+In case of cget, rs0 and rs1 are not used.
+In case of crst, rs0, rs1 and rd are not used.
+At the end those values are just converted to hexadecimal.
+Its inportant that in riscv-opc.h no unnecessary comments or spaces are added.
+Save changes in this file.<br>
+
+Open terminal in location /riscv-gnu-toolchain.<br>
+Run this commands:
+...
+make clean
+make
+...
+This will take some time. About 2 hours.
