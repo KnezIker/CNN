@@ -540,6 +540,9 @@ So, the codes for the first 3 instructions should look like this:
 ## Preparing the cv32e40p core for the accelerator
 
 From this point on, most of the work will be done in Verilog (the fun part).
+All files in the cv32e40p core that are going to be changed and all files that are going to be added to the cv32e40p core, are in the directory:
+/hw/rtl.<br>
+Other propriatary files (that will be mentioned later in the code) needed for configuring the compiler are in the directory /hw/gcc_files.<br>
 The goal is to modify the cv32e40p core of Pulpissimo to run our custom instruction on the custom hardware accelerator.
 However, to modify the cv32e40p core, one must first open it.
 Detailed instructions for installing pulpissimo can be found [here](https://github.com/pznikola/pulpissimo/blob/master/SETUP.md)).<br>
