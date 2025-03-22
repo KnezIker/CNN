@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Deklaracije za inline asembler
 void cmul(int32_t ra, int32_t rb);  // cmul ra, rb
 int32_t cget(void);                 // cget rd
 void crst(void);                    // crst
@@ -9,10 +8,10 @@ void crst(void);                    // crst
 int main() {
     int32_t result;
 
-    // Resetuj akumulator
+    // Restart accumulator
     crst();
 
-    // Testiranje cmul i cget
+    // Testing Cmul and Cget
     int32_t a = 0x00020000;  // 2.0 u Q15.16
     int32_t b = 0x00030000;  // 3.0 u Q15.16
 
@@ -25,9 +24,9 @@ int main() {
 
     cmul(c, d);  // 1.0 * 4.0 = 4.0
     result = cget();
-    printf("Rezultat nakon drugog množenja: %d\n", result);  // Očekivano: 10.0 (6.0 + 4.0)
+    printf("Rezultat nakon drugog množenja: %d\n", result);  // Expected: 10.0 (6.0 + 4.0)
 
-    // Resetuj akumulator i testiraj ponovo
+    // Restart accumulator and start again
     crst();
 
     int32_t e = 0x00050000;  // 5.0 u Q15.16
@@ -35,12 +34,12 @@ int main() {
 
     cmul(e, f);  // 5.0 * 2.0 = 10.0
     result = cget();
-    printf("Rezultat nakon resetovanja i trećeg množenja: %d\n", result);  // Očekivano: 10.0
+    printf("Rezultat nakon resetovanja i trećeg množenja: %d\n", result);  // Expected: 10.0
 
     return 0;
 }
 
-// Implementacije asemblerskih instrukcija
+// Implementation of assembly functions.
 void cmul(int32_t ra, int32_t rb) {
 __asm__ volatile ("cmul %0, %1" : : "r"(ra), "r"(rb));
 }
@@ -55,6 +54,5 @@ void crst(void) {
     __asm__ volatile ("crst");
 }
 
-//110 0000 0000 0000 0000
 
 
