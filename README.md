@@ -818,3 +818,4 @@ make clean
 make
 ```
 This will take some time. About 2 hours.
+When build is done, build pulpissimo and run test program.
