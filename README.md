@@ -818,4 +818,10 @@ make clean
 make
 ```
 This will take some time. About 2 hours.
+Make sure that in bashrc PULP_RISCV_GCC_TOOLCHAIN path is defined only once.
+Otherwise, gcc might be compiled in one path, and pulpissimo will use older version of gcc from different path.
 When build is done, build pulpissimo and run test program.
+To run test program, follow the same rules in pulpissimo readme file, for running hello world program.
+Just instead of the hello world program, copy content of sw/test.c into the hello world program.
+
+
