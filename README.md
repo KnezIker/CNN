@@ -445,35 +445,35 @@ The .L97 code is called by .L99, adding 2 more instructions, and .L99 is called 
 The .L99 code is called by .L96 L0_KERNEL_DIMENSIONS = 5 times, giving:<br>
 ((32 + 44 + 3) * 5 + 2 + 5) * 5 = 2000 cycles.<br>
 
-The .L96 code itself introduces 32 additional instructions, so:<br>
-((32 + 44 + 3) * 5 + 2 + 5) * 5 + 32 = 2032 cycles.<br>
+The .L96 code itself introduces 31 additional instructions + 10 relu instructions, so:<br>
+((32 + 44 + 3) * 5 + 2 + 5) * 5 + 41 = 2041 cycles.<br>
 
 The .L96 code is called by .L100, adding 2 more instructions, and .L100 is called by .L95, adding another 3:<br>
-((32 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5 = 2037 cycles.<br>
+((32 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5 = 2046 cycles.<br>
 
 The .L100 code runs L0_CHANNEL_WIDTH = 28 times, resulting in:<br>
-(((32 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 = 57,036 cycles.<br>
+(((32 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 = 57,288 cycles.<br>
 
 The .L95 code itself adds 3 more instructions, so:<br>
-(((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 = 57,039 cycles.<br>
+(((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 = 57,291 cycles.<br>
 
 The .L95 code is called by .L101, adding 2 more instructions, and .L101 is called by .L94, adding another 3:<br>
-(((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5 = 57,044 cycles.<br>
+(((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5 = 57,296 cycles.<br>
 
 The .L101 code runs L0_CHANNEL_WIDTH = 28 times, leading to:<br>
-((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 = 1,597,232 cycles.<br>
+((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 = 1,604,288 cycles.<br>
 
 The .L94 code introduces 3 more instructions, so:<br>
-((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 + 3 = 1,597,235 cycles.<br>
+((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 = 1,604,291 cycles.<br>
 
 The .L94 code is called by .L102, adding 2 more instructions, and .L102 is called by .L93, adding another 3:<br>
-((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 + 3 + 5 = 1,597,240 cycles.<br>
+((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5 = 1,604,296 cycles.<br>
 
 The .L102 code runs L0_NUMBER_OF_KERNELS = 2 times, so:<br>
-(((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 32 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 3,194,480 cycles.<br>
+(((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 3,208,592 cycles.<br>
 
 Finally, .L93 is called by calc_layer_0_Channels, which adds 12 more cycles, resulting in:<br>
-≈ 3,194,492  cycles just for the first layer calculation.<br>
+≈ 3,208,592  cycles just for the first layer calculation.<br>
 
 <div align="center">
   <img src="doc/ALotOfCycles.png" alt="Opis slike" width="300" />
@@ -824,4 +824,79 @@ When build is done, build pulpissimo and run test program.
 To run test program, follow the same rules in pulpissimo readme file, for running hello world program.
 Just instead of the hello world program, copy content of sw/test.c into the hello world program.
 
+Integrating cmul, cget and crst into c and making it c compatabile, will be done [here](Part of this code where its done).<br>
+
+Lets see how much cycles will be saved and what else could be hardware accelerated.
+
+Without cmul accelerator there is:
+(((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 3,208,592 cycles.<br>
+With cmul accelerator, 38 cycles of mul fuction and additional 5 instructions for adding result of mul function to tmp variable are compressed to one instruction. So the calculation is:
+(((((40 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 1,813,072 cycles.<br>
+Which is 1.7 times faster.
+40 lines of L98 code couldn't be further accelerater without hardware for loops.
+They already exist in pulpissimo architecture, and are kinda complex to integrate, so they will be skipped for now.
+
+Accelerating anything else further in this part of the code would only speed up by few percent, so lets go back to other layers.
+
+Next layer is pooling1:
+
+c code:<br>
+
+```c
+void pooling1 (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH],
+int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH [L0_CHANNEL_WITH], int dimension)
+{
+    int col;
+    int row;
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        for (j = 0, m = 0; j < L0_CHANNEL_WITH; j = j + dimension, m++) {
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) {
+                col = k;
+                row = j;
+                for (int g = 0; g < dimension; g++) {
+                    for (int h = 0; h < dimension; h++) {
+                        if(L0C[i][j+g][k+h] > L0C[i][row][col])
+                        {
+                            col = k+h;
+                            row = j+g;
+                        }
+                    }
+                }
+                L0CP[i][m][n] = L0C[i][row][col];
+            }
+        }
+    }
+}
+```
+pooling1 assembly code:<br>
+
+```assembly
+pooling1:
+	addi	sp,sp,-80	# Allocate 80 bytes on the stack (for local variables and saved registers)
+	sw	s0,76(sp)	# Save the value of register s0 on the stack (at offset 76 from sp)
+	addi	s0,sp,80	# Set s0 to point to the end of the allocated stack frame (sp + 80)
+	sw	a0,-68(s0)	# Save the value of argument a0 (pointer to L0CP) on the stack (at offset -68 from s0)
+	sw	a1,-72(s0)	# Save the value of argument a1 (pointer to L0C) on the stack (at offset -72 from s0)
+	sw	a2,-76(s0)	# Save the value of argument a2 (dimension) on the stack (at offset -76 from s0)
+	sw	zero,-28(s0)    # Initialize a local variable on the stack (at offset -28 from s0) to 0
+	j	.L104		# Jump to label .L104 (start of the main loop)
+```
+
+.L104 assembly code:
+
+```assembly
+L104:
+	lw	a4,-28(s0)	# Load the value of the local variable (i) (at offset -28 from s0) into register a4
+	li	a5,1		# Load the immediate value 1 (L0_NUMBER_OF_KERNELS) into register a5
+	ble	a4,a5,.L114	# If i < L0_NUMBER_OF_KERNELS jump to L114
+	nop
+	nop
+	lw	s0,76(sp)	# Restore the value of register s0 from the stack (at offset 76 from sp)
+	addi	sp,sp,80	# Deallocate the stack space (move the stack pointer back by 80 bytes)
+	jr	ra		# Jump to the return address (end of the function)
+```
 
