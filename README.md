@@ -1117,5 +1117,19 @@ With small amount aditional instructions, those loops will be called again 24 ti
 306,432 cycles.
 
 The idea is to make hardware accelerator that will recieve 4 numbers, and decide which one is the greatest.
-When accelerator recieves nth number, it will automatically clear its memory, but keep its output
+When accelerator recieves nth number, it will automatically clear its memory, but keep its output:
+
+<div align="center">
+  <img src="doc/max.png" alt="Opis slike" width="300" />
+</div>
+
+Numbers will be recieved in pairs on a and b inputs, and dim input will tell accelerator how much numbers are there.
+
+There will be 4 new instructions:<br>
+```
+maxdim rx          Sets the dimension of memory in maxdim
+maxget rx          Gets the result value
+maxload rx, ry     Loads the accelerator
+maxreset           Resets the accelerator
+```
 
