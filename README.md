@@ -900,3 +900,222 @@ L104:
 	jr	ra		# Jump to the return address (end of the function)
 ```
 
+.L114 assembly code:
+
+```assembly
+L114:
+	sw	zero,-36(s0)	# Sets j = 0
+	sw	zero,-32(s0)	# Sets m = 0
+	j	.L105		# Jumps to L105
+```
+
+.L105 assembly code:
+
+```assembly
+.L105:
+	lw	a4,-36(s0)	# Load the value of j into register a4
+	li	a5,23		# Load the immediate value 23 (L0_NUMBER_OF_KERNELS) into register a5
+	ble	a4,a5,.L113	# If j < L0_NUMBER_OF_KERNELS jump to L113
+	lw	a5,-28(s0)	# Load the value of i into register a5
+	addi	a5,a5,1		# Increment i
+	sw	a5,-28(s0)	# Save i
+```
+L105 is directly above L104.<br>
+
+.L113 assembly code:
+```assembly
+.L113:
+	sw	zero,-44(s0)	# Sets k = 0
+	sw	zero,-40(s0)	# Sets n = 0
+	j	.L106		# Jumps to L106
+```
+
+.L106 assembly code:
+```assembly
+.L106:
+	lw	a4,-44(s0)	# Load the value of k into register a4
+	li	a5,23		# Load the immediate value 23 (L0_NUMBER_OF_KERNELS) into register a5
+	ble	a4,a5,.L112	# If k < L0_NUMBER_OF_KERNELS jump to L112
+	lw	a4,-36(s0)	# Load the value of j into register a4
+	lw	a5,-76(s0)	# Load the value of 2 (dimmension) into register a4
+	add	a5,a4,a5	# Increment j by dimmension (j = j + 2)
+	sw	a5,-36(s0)	# Save j
+	lw	a5,-32(s0)	# Load value of m into register a5
+	addi	a5,a5,1		# Increment m by 1 (m++)
+	sw	a5,-32(s0)	# Save m
+```
+L106 is directly above L105.<br>
+
+.L112 assembly code:
+```assembly
+.L112:
+	lw	a5,-44(s0)	# Load the value of k into register a4
+	sw	a5,-20(s0)	# Store value of k into variable col
+	lw	a5,-36(s0)	# Load the value of j into register a5
+	sw	a5,-24(s0)	# Store value of j into variable row
+	sw	zero,-48(s0)	# int g = 0
+	j	.L107		# jumps to L107
+```
+
+.L107 assembly code:
+```assembly
+.L107:
+	lw	a4,-48(s0)	# Load the value of g into register a4
+	lw	a5,-76(s0)	# Load the value of 2 (dimmension) into register a5
+	blt	a4,a5,.L111	# If g < 2 jump to .L111
+
+	#CALCULATING L0C[i]
+	lw	a4,-28(s0)	# Load the value of i into register a4
+	mv	a5,a4		# a5 = i
+	slli	a5,a5,3		# a5 = 8*i
+	add	a5,a5,a4	# a5 = 8*i + i = 9*i
+	slli	a5,a5,8		# a5 = 256*9*i
+	mv	a4,a5		# Move the result (offset, a5) into register a4
+	lw	a5,-72(s0)	# Load the base address of L0C into register a5
+	add	a3,a5,a4	# a3 = base address of L0C + offset_i
+
+	#CALCULATING L0CP[i]
+	lw	a4,-28(s0)	# Load the value of i into register a4
+	mv	a5,a4		# a5 = i
+	slli	a5,a5,3		# a5 = 8*i
+	add	a5,a5,a4	# a5 = 8*i + i = 9*i
+	slli	a5,a5,6		# a5 = 64*9*i
+	mv	a4,a5		# a4 = 64*9*i
+	lw	a5,-68(s0)	# Load the base address of L0CP into register a5
+	add	a2,a5,a4	# Add a4 to a5 (a2 = base address of L0CP + offset_i)
+
+	#CALCULATING L0C[i][row][col]
+	lw	a4,-24(s0)	# Load the value of j into register a4
+	mv	a5,a4		# a5 = j
+	slli	a5,a5,1		# a5 = 2*j
+	add	a5,a5,a4	# a5 = 2*j + j = 3*j
+	slli	a5,a5,3		# a5 = 8*3*j
+	lw	a4,-20(s0)	# Load the value of k into register a4
+	add	a5,a5,a4	# a5 = 8*3*j + k
+	slli	a5,a5,2		# a5 = 4*(8*3*j + k)
+	add	a5,a3,a5	# a3 = base address of L0C + offset_i +  4*(8*3*j + k)
+	lw	a3,0(a5)	# a3 = LOC[i][row][col]
+
+	#CALCULATING L0CP[i][m][n]
+	lw	a4,-32(s0)	# Load the value of m into register a4
+	mv	a5,a4		# a5 = m
+	slli	a5,a5,1		# a5 = 2*m
+	add	a5,a5,a4	# a5 = 2*m + m = 3*m
+	slli	a5,a5,2		# a5 = 4*3*m
+	lw	a4,-40(s0)	# a4 = n
+	add	a5,a5,a4	# a5 = 4*3*m + n
+	slli	a5,a5,2		# a5 = 4*(4*3*m + n)
+	add	a5,a2,a5	# a5 = base address of L0CP + offset_i + 4*(4*3*m + n)
+	sw	a3,0(a5)	# Store value of LOCP, L0CP[i][m][n] = LOC[i][row][col]
+
+	#INCREMENTING N AND K
+	lw	a4,-44(s0)	# Load the value of k into register a4
+	lw	a5,-76(s0)	# Load the value of 2 (dimmension) into register a5
+	add	a5,a4,a5	# Increment k by dimmension (j = j + 2)
+	sw	a5,-44(s0)	# Store k
+	lw	a5,-40(s0)	# Load the value of n into register a5
+	addi	a5,a5,1		# Increment n (n++)
+	sw	a5,-40(s0)	# Store n
+```
+L107 is directly above L106.<br>
+.L111 assembly code:
+
+```assembly
+.L111:
+	sw	zero,-52(s0)	# h = 0;
+	j	.L108
+```
+
+.L111 assembly code:
+```assembly
+.L108:
+	lw	a4,-52(s0)	# Load the value of h into register a4
+	lw	a5,-76(s0)	# Load the value of 2 (dimmension) into register a5
+	blt	a4,a5,.L110	# If g < 2 jump to .L110
+	lw	a5,-48(s0)	# Load the value of g into register a5
+	addi	a5,a5,1		# Increment g (g++)
+	sw	a5,-48(s0)	# Store g
+```
+L108 is directly above L107.<br>
+
+.L110 assembly code:
+```assembly
+.L110:
+	#CALCULATING L0C[i]
+	lw	a4,-28(s0)	# Load the value of i into register a4
+	mv	a5,a4		# a5 = i
+	slli	a5,a5,3		# a5 = 8*i
+	add	a5,a5,a4	# a5 = 8*i + i = 9*i
+	slli	a5,a5,8		# a5 = 256*9*i
+	mv	a4,a5		# a4 = 256*9*i
+	lw	a5,-72(s0)	# Load the base address of L0C into register a5
+	add	a3,a5,a4	#  a3 = base address of L0C + 256*9*i
+
+	#CALCULATING L0C[i][j+g][k+h]
+	lw	a4,-36(s0)	# Load the value of j into register a4
+	lw	a5,-48(s0)	# Load the value of g into register a5
+	add	a4,a4,a5	# a4 = g + j
+	lw	a2,-44(s0)	# a2 = Load the value of k into register a2
+	lw	a5,-52(s0)	# a5 = Load the value of h into register a5
+	add	a2,a2,a5	# a2 = k + h
+	mv	a5,a4		# a5 = g + j
+	slli	a5,a5,1		# a5 = 2*(g + j)
+	add	a5,a5,a4	# a5 = 3*(g + j)
+	slli	a5,a5,3		# a5 = 8*3*(g + j)
+	add	a5,a5,a2	# a5 = 8*3*(g + j) +  k + h
+	slli	a5,a5,2		# a5 = 4*(8*3*(g + j) +  k + h)
+	add	a5,a3,a5	# a5 = base address of L0C + 256*9*i + 4*(8*3*(g + j) +  k + h)
+	lw	a3,0(a5)	# a3 = L0C[i][j+g][k+h]
+
+	#CALCULATING L0C[i][j][k]
+	lw	a4,-28(s0)	# Load the value of i into register a4
+	mv	a5,a4		# a5 = i
+	slli	a5,a5,3		# a5 = 8*i
+	add	a5,a5,a4	# a5 = 8*i + i = 9*i
+	slli	a5,a5,8		# a5 = 256*9*i
+	mv	a4,a5		# a4 = 256*9*i
+	lw	a5,-72(s0)	# Load the base address of L0C into register a5
+	add	a2,a5,a4	# a2 = base address of L0C + 256*9*i
+	lw	a4,-24(s0)	# Load the value of j into register a4
+	mv	a5,a4		# a5 = j
+	slli	a5,a5,1		# a5 = 2*j
+	add	a5,a5,a4	# a5 = 2*j + j = 3*j
+	slli	a5,a5,3		# a5 = 8*3*j
+	lw	a4,-20(s0)	# Load the value of k into register a4
+	add	a5,a5,a4	# a5 = 8*3*j + k
+	slli	a5,a5,2		# a5 = 4*(8*3*j + k)
+	add	a5,a2,a5	# a5 = base address of L0C + 256*9*i + 4*(8*3*j + k)
+	lw	a5,0(a5)	# a5 = L0C[i][j][k]
+	ble	a3,a5,.L109	# If L0C[i][j+g][k+h] <= L0C[i][j][k] jump to .L109
+
+	#CALCULATING NEW ROW ANC COL
+	lw	a4,-44(s0)	# a4 = k
+	lw	a5,-52(s0)	# a5 = h
+	add	a5,a4,a5	# a5 = k + h
+	sw	a5,-20(s0)	# store col = k+h
+	lw	a4,-36(s0)	# a4 = j
+	lw	a5,-48(s0)	# a5 = g
+	add	a5,a4,a5	# a5 = j + g
+	sw	a5,-24(s0)	# store row = j+g
+```
+L110 is directly above L109.<br>
+```assembly
+.L109:
+	lw	a5,-52(s0)	# a5 = Load the value of h into register a5
+	addi	a5,a5,1		# Increment h (h++)
+	sw	a5,-52(s0)	# Store h
+```
+L109 is directly above L108.<br>
+
+L110 and L109 togeather have 52 cycles and will be called by L108 2 times (dimension = 2), which will be called by L111 and L107 2 times (dimension = 2), totaling 4 times.
+However, last 8 of L110 will be executed only 1.1 times on average in that 4 loops, assuming channel values are random.
+So total number of cycles on average is:<br>
+((46 + 3) * 2 + 3) * 2 + 1.1 * 8 = 211 cycles<br>
+L107 has additional 46 instructions, and its called by L112 which is caled by L106 24 times and they bring aditional 9 instructions so in total<br>
+(((46 + 3) * 2 + 3) * 2 + 1.1 * 8 + 55)*24 = 6384 cycles<br>
+With small amount aditional instructions, those loops will be called again 24 times, and 2 times for each layer 0 channel, giving total of around:<br>
+306,432 cycles.
+
+The idea is to make hardware accelerator that will recieve 4 numbers, and decide which one is the greatest.
+When accelerator recieves nth number, it will automatically clear its memory, but keep its output
+
