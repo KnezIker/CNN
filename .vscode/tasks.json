@@ -2,6 +2,58 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Build RISC-V Program",
+            "type": "shell",
+            "command": "riscv32-unknown-elf-gcc",
+            "args": [
+                "-march=rv32gc_xpulpv3_xcorev",
+                "-mabi=ilp32",
+                "-c", "${workspaceFolder}/sw/cnn.c", "-o", "${workspaceFolder}/sw/cnn.o",
+                "&&",
+                "riscv32-unknown-elf-gcc",
+                "-march=rv32gc_xpulpv3_xcorev",
+                "-mabi=ilp32",
+                "-c", "${workspaceFolder}/sw/pooling.s", "-o", "${workspaceFolder}/sw/pooling.o",
+                "&&",
+                "riscv32-unknown-elf-gcc",
+                "-march=rv32gc_xpulpv3_xcorev",
+                "-mabi=ilp32",
+                "${workspaceFolder}/sw/cnn.o",
+                "${workspaceFolder}/sw/pooling.o",
+                "-o", "${workspaceFolder}/sw/cnn_program"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "Build C and Assembly together"
+        },
+        {
+            "label": "Generate Assembly from C",
+            "type": "shell",
+            "command": "riscv32-unknown-elf-gcc",
+            "args": [
+                "-march=rv32gc_xpulpv3_xcorev",
+                "-mabi=ilp32",
+                "-S",
+                "-fno-verbose-asm",
+                "-fno-asynchronous-unwind-tables",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.s"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Generate assembly from C code"
+        }
+    ]
+}
+/*
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
             "label": "Build RISC-V",
             "type": "shell",
             "command": "riscv32-unknown-elf-gcc",
@@ -39,6 +91,7 @@
         }
     ]
 }
+*/
 /*
 {
     "tasks": [

@@ -75,7 +75,6 @@
         -Comment "FIXED POINT" in load_layer_i functions, no need to uncomment anything there
         -Uncomment floating point part of code in sigmoid function and comment fixed point part of code
 */
-extern int pooling_asm_func(int32_t* address, int dimension, int channel_width);
 static inline int32_t mul        (int32_t a, int32_t b) 
 {
     return (int32_t)(((int64_t)a * (int64_t)b) >> DECIMAL_BITS);
@@ -361,7 +360,18 @@ void       pooling1              (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_
             int n;
             int k;
             for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) {
-                L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
+                col = k;
+                row = j;
+                for (int g = 0; g < dimension; g++) {
+                    for (int h = 0; h < dimension; h++) {
+                        if(L0C[i][j+g][k+h] > L0C[i][row][col])
+                        {
+                            col = k+h;
+                            row = j+g;
+                        }
+                    }
+                }
+                L0CP[i][m][n] = L0C[i][row][col];
             }
         }
     }

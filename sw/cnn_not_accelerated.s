@@ -3122,100 +3122,166 @@ calc_layer_0_Channels:
 	.globl	pooling1
 	.type	pooling1, @function
 pooling1:
-	addi	sp,sp,-64
-	sw	ra,60(sp)
-	sw	s0,56(sp)
-	sw	s1,52(sp)
-	addi	s0,sp,64
-	sw	a0,-52(s0)
-	sw	a1,-56(s0)
-	sw	a2,-60(s0)
-	sw	zero,-20(s0)
-	j	.L104
-.L109:
+	addi	sp,sp,-80
+	sw	s0,76(sp)
+	addi	s0,sp,80
+	sw	a0,-68(s0)
+	sw	a1,-72(s0)
+	sw	a2,-76(s0)
 	sw	zero,-28(s0)
-	sw	zero,-24(s0)
-	j	.L105
-.L108:
+	j	.L104
+.L114:
 	sw	zero,-36(s0)
 	sw	zero,-32(s0)
+	j	.L105
+.L113:
+	sw	zero,-44(s0)
+	sw	zero,-40(s0)
 	j	.L106
-.L107:
-	lw	a4,-20(s0)
+.L112:
+	lw	a5,-44(s0)
+	sw	a5,-20(s0)
+	lw	a5,-36(s0)
+	sw	a5,-24(s0)
+	sw	zero,-48(s0)
+	j	.L107
+.L111:
+	sw	zero,-52(s0)
+	j	.L108
+.L110:
+	lw	a4,-28(s0)
 	mv	a5,a4
 	slli	a5,a5,3
 	add	a5,a5,a4
 	slli	a5,a5,8
 	mv	a4,a5
-	lw	a5,-56(s0)
+	lw	a5,-72(s0)
 	add	a3,a5,a4
-	lw	a4,-28(s0)
+	lw	a4,-36(s0)
+	lw	a5,-48(s0)
+	add	a4,a4,a5
+	lw	a2,-44(s0)
+	lw	a5,-52(s0)
+	add	a2,a2,a5
 	mv	a5,a4
 	slli	a5,a5,1
 	add	a5,a5,a4
 	slli	a5,a5,3
-	lw	a4,-36(s0)
+	add	a5,a5,a2
+	slli	a5,a5,2
+	add	a5,a3,a5
+	lw	a3,0(a5)
+	lw	a4,-28(s0)
+	mv	a5,a4
+	slli	a5,a5,3
+	add	a5,a5,a4
+	slli	a5,a5,8
+	mv	a4,a5
+	lw	a5,-72(s0)
+	add	a2,a5,a4
+	lw	a4,-24(s0)
+	mv	a5,a4
+	slli	a5,a5,1
+	add	a5,a5,a4
+	slli	a5,a5,3
+	lw	a4,-20(s0)
 	add	a5,a5,a4
 	slli	a5,a5,2
-	add	a3,a3,a5
-	lw	a4,-20(s0)
+	add	a5,a2,a5
+	lw	a5,0(a5)
+	ble	a3,a5,.L109
+	lw	a4,-44(s0)
+	lw	a5,-52(s0)
+	add	a5,a4,a5
+	sw	a5,-20(s0)
+	lw	a4,-36(s0)
+	lw	a5,-48(s0)
+	add	a5,a4,a5
+	sw	a5,-24(s0)
+.L109:
+	lw	a5,-52(s0)
+	addi	a5,a5,1
+	sw	a5,-52(s0)
+.L108:
+	lw	a4,-52(s0)
+	lw	a5,-76(s0)
+	blt	a4,a5,.L110
+	lw	a5,-48(s0)
+	addi	a5,a5,1
+	sw	a5,-48(s0)
+.L107:
+	lw	a4,-48(s0)
+	lw	a5,-76(s0)
+	blt	a4,a5,.L111
+	lw	a4,-28(s0)
+	mv	a5,a4
+	slli	a5,a5,3
+	add	a5,a5,a4
+	slli	a5,a5,8
+	mv	a4,a5
+	lw	a5,-72(s0)
+	add	a3,a5,a4
+	lw	a4,-28(s0)
 	mv	a5,a4
 	slli	a5,a5,3
 	add	a5,a5,a4
 	slli	a5,a5,6
 	mv	a4,a5
-	lw	a5,-52(s0)
-	add	s1,a5,a4
-	li	a2,24
-	lw	a1,-60(s0)
-	mv	a0,a3
-	call	pooling_asm_func
-	mv	a3,a0
+	lw	a5,-68(s0)
+	add	a2,a5,a4
 	lw	a4,-24(s0)
 	mv	a5,a4
 	slli	a5,a5,1
 	add	a5,a5,a4
-	slli	a5,a5,2
-	lw	a4,-32(s0)
+	slli	a5,a5,3
+	lw	a4,-20(s0)
 	add	a5,a5,a4
 	slli	a5,a5,2
-	add	a5,s1,a5
+	add	a5,a3,a5
+	lw	a3,0(a5)
+	lw	a4,-32(s0)
+	mv	a5,a4
+	slli	a5,a5,1
+	add	a5,a5,a4
+	slli	a5,a5,2
+	lw	a4,-40(s0)
+	add	a5,a5,a4
+	slli	a5,a5,2
+	add	a5,a2,a5
 	sw	a3,0(a5)
+	lw	a4,-44(s0)
+	lw	a5,-76(s0)
+	add	a5,a4,a5
+	sw	a5,-44(s0)
+	lw	a5,-40(s0)
+	addi	a5,a5,1
+	sw	a5,-40(s0)
+.L106:
+	lw	a4,-44(s0)
+	li	a5,23
+	ble	a4,a5,.L112
 	lw	a4,-36(s0)
-	lw	a5,-60(s0)
+	lw	a5,-76(s0)
 	add	a5,a4,a5
 	sw	a5,-36(s0)
 	lw	a5,-32(s0)
 	addi	a5,a5,1
 	sw	a5,-32(s0)
-.L106:
+.L105:
 	lw	a4,-36(s0)
 	li	a5,23
-	ble	a4,a5,.L107
-	lw	a4,-28(s0)
-	lw	a5,-60(s0)
-	add	a5,a4,a5
+	ble	a4,a5,.L113
+	lw	a5,-28(s0)
+	addi	a5,a5,1
 	sw	a5,-28(s0)
-	lw	a5,-24(s0)
-	addi	a5,a5,1
-	sw	a5,-24(s0)
-.L105:
-	lw	a4,-28(s0)
-	li	a5,23
-	ble	a4,a5,.L108
-	lw	a5,-20(s0)
-	addi	a5,a5,1
-	sw	a5,-20(s0)
 .L104:
-	lw	a4,-20(s0)
+	lw	a4,-28(s0)
 	li	a5,1
-	ble	a4,a5,.L109
+	ble	a4,a5,.L114
 	nop
 	nop
-	lw	ra,60(sp)
-	lw	s0,56(sp)
-	lw	s1,52(sp)
-	addi	sp,sp,64
+	lw	s0,76(sp)
+	addi	sp,sp,80
 	jr	ra
 	.size	pooling1, .-pooling1
 	.align	1
@@ -3229,26 +3295,26 @@ pooling2:
 	sw	a1,-72(s0)
 	sw	a2,-76(s0)
 	sw	zero,-28(s0)
-	j	.L111
-.L121:
+	j	.L116
+.L126:
 	sw	zero,-36(s0)
 	sw	zero,-32(s0)
-	j	.L112
-.L120:
+	j	.L117
+.L125:
 	sw	zero,-44(s0)
 	sw	zero,-40(s0)
-	j	.L113
-.L119:
+	j	.L118
+.L124:
 	lw	a5,-44(s0)
 	sw	a5,-20(s0)
 	lw	a5,-36(s0)
 	sw	a5,-24(s0)
 	sw	zero,-48(s0)
-	j	.L114
-.L118:
+	j	.L119
+.L123:
 	sw	zero,-52(s0)
-	j	.L115
-.L117:
+	j	.L120
+.L122:
 	lw	a4,-28(s0)
 	li	a5,400
 	mul	a5,a4,a5
@@ -3283,7 +3349,7 @@ pooling2:
 	slli	a5,a5,2
 	add	a5,a2,a5
 	lw	a5,0(a5)
-	ble	a3,a5,.L116
+	ble	a3,a5,.L121
 	lw	a4,-44(s0)
 	lw	a5,-52(s0)
 	add	a5,a4,a5
@@ -3292,21 +3358,21 @@ pooling2:
 	lw	a5,-48(s0)
 	add	a5,a4,a5
 	sw	a5,-24(s0)
-.L116:
+.L121:
 	lw	a5,-52(s0)
 	addi	a5,a5,1
 	sw	a5,-52(s0)
-.L115:
+.L120:
 	lw	a4,-52(s0)
 	lw	a5,-76(s0)
-	blt	a4,a5,.L117
+	blt	a4,a5,.L122
 	lw	a5,-48(s0)
 	addi	a5,a5,1
 	sw	a5,-48(s0)
-.L114:
+.L119:
 	lw	a4,-48(s0)
 	lw	a5,-76(s0)
-	blt	a4,a5,.L118
+	blt	a4,a5,.L123
 	lw	a4,-28(s0)
 	li	a5,400
 	mul	a5,a4,a5
@@ -3343,10 +3409,10 @@ pooling2:
 	lw	a5,-40(s0)
 	addi	a5,a5,1
 	sw	a5,-40(s0)
-.L113:
+.L118:
 	lw	a4,-44(s0)
 	li	a5,9
-	ble	a4,a5,.L119
+	ble	a4,a5,.L124
 	lw	a4,-36(s0)
 	lw	a5,-76(s0)
 	add	a5,a4,a5
@@ -3354,17 +3420,17 @@ pooling2:
 	lw	a5,-32(s0)
 	addi	a5,a5,1
 	sw	a5,-32(s0)
-.L112:
+.L117:
 	lw	a4,-36(s0)
 	li	a5,9
-	ble	a4,a5,.L120
+	ble	a4,a5,.L125
 	lw	a5,-28(s0)
 	addi	a5,a5,1
 	sw	a5,-28(s0)
-.L111:
+.L116:
 	lw	a4,-28(s0)
 	li	a5,3
-	ble	a4,a5,.L121
+	ble	a4,a5,.L126
 	nop
 	nop
 	lw	s0,76(sp)
@@ -3389,23 +3455,23 @@ calc_layer_2_Channels:
 	call	puts
 	sw	zero,-20(s0)
 	sw	zero,-24(s0)
-	j	.L123
-.L134:
-	sw	zero,-28(s0)
-	j	.L124
-.L133:
-	sw	zero,-32(s0)
-	j	.L125
-.L132:
-	sw	zero,-36(s0)
-	j	.L126
-.L131:
-	sw	zero,-40(s0)
-	j	.L127
-.L130:
-	sw	zero,-44(s0)
 	j	.L128
-.L129:
+.L139:
+	sw	zero,-28(s0)
+	j	.L129
+.L138:
+	sw	zero,-32(s0)
+	j	.L130
+.L137:
+	sw	zero,-36(s0)
+	j	.L131
+.L136:
+	sw	zero,-40(s0)
+	j	.L132
+.L135:
+	sw	zero,-44(s0)
+	j	.L133
+.L134:
 	lw	a4,-36(s0)
 	mv	a5,a4
 	slli	a5,a5,3
@@ -3459,24 +3525,24 @@ calc_layer_2_Channels:
 	lw	a5,-44(s0)
 	addi	a5,a5,1
 	sw	a5,-44(s0)
-.L128:
+.L133:
 	lw	a4,-44(s0)
 	li	a5,2
-	ble	a4,a5,.L129
+	ble	a4,a5,.L134
 	lw	a5,-40(s0)
 	addi	a5,a5,1
 	sw	a5,-40(s0)
-.L127:
+.L132:
 	lw	a4,-40(s0)
 	li	a5,2
-	ble	a4,a5,.L130
+	ble	a4,a5,.L135
 	lw	a5,-36(s0)
 	addi	a5,a5,1
 	sw	a5,-36(s0)
-.L126:
+.L131:
 	lw	a4,-36(s0)
 	li	a5,1
-	ble	a4,a5,.L131
+	ble	a4,a5,.L136
 	lw	a5,-24(s0)
 	slli	a5,a5,2
 	lw	a4,-64(s0)
@@ -3506,24 +3572,24 @@ calc_layer_2_Channels:
 	lw	a5,-32(s0)
 	addi	a5,a5,1
 	sw	a5,-32(s0)
-.L125:
+.L130:
 	lw	a4,-32(s0)
 	li	a5,9
-	ble	a4,a5,.L132
+	ble	a4,a5,.L137
 	lw	a5,-28(s0)
 	addi	a5,a5,1
 	sw	a5,-28(s0)
-.L124:
+.L129:
 	lw	a4,-28(s0)
 	li	a5,9
-	ble	a4,a5,.L133
+	ble	a4,a5,.L138
 	lw	a5,-24(s0)
 	addi	a5,a5,1
 	sw	a5,-24(s0)
-.L123:
+.L128:
 	lw	a4,-24(s0)
 	li	a5,3
-	ble	a4,a5,.L134
+	ble	a4,a5,.L139
 	nop
 	nop
 	lw	ra,60(sp)
@@ -3547,19 +3613,19 @@ calc_layer_5_outputs:
 	sw	zero,-20(s0)
 	sw	zero,-24(s0)
 	sw	zero,-28(s0)
-	j	.L136
-.L143:
+	j	.L141
+.L148:
 	sw	zero,-24(s0)
 	sw	zero,-20(s0)
 	sw	zero,-32(s0)
-	j	.L137
-.L142:
+	j	.L142
+.L147:
 	sw	zero,-36(s0)
-	j	.L138
-.L141:
+	j	.L143
+.L146:
 	sw	zero,-40(s0)
-	j	.L139
-.L140:
+	j	.L144
+.L145:
 	lw	a4,-40(s0)
 	li	a5,100
 	mul	a5,a4,a5
@@ -3596,24 +3662,24 @@ calc_layer_5_outputs:
 	lw	a5,-40(s0)
 	addi	a5,a5,1
 	sw	a5,-40(s0)
-.L139:
+.L144:
 	lw	a4,-40(s0)
 	li	a5,3
-	ble	a4,a5,.L140
+	ble	a4,a5,.L145
 	lw	a5,-36(s0)
 	addi	a5,a5,1
 	sw	a5,-36(s0)
-.L138:
+.L143:
 	lw	a4,-36(s0)
 	li	a5,4
-	ble	a4,a5,.L141
+	ble	a4,a5,.L146
 	lw	a5,-32(s0)
 	addi	a5,a5,1
 	sw	a5,-32(s0)
-.L137:
+.L142:
 	lw	a4,-32(s0)
 	li	a5,4
-	ble	a4,a5,.L142
+	ble	a4,a5,.L147
 	lw	a5,-28(s0)
 	slli	a5,a5,2
 	lw	a4,-64(s0)
@@ -3629,10 +3695,10 @@ calc_layer_5_outputs:
 	lw	a5,-28(s0)
 	addi	a5,a5,1
 	sw	a5,-28(s0)
-.L136:
+.L141:
 	lw	a4,-28(s0)
 	li	a5,9
-	ble	a4,a5,.L143
+	ble	a4,a5,.L148
 	nop
 	nop
 	lw	ra,60(sp)
@@ -3651,8 +3717,8 @@ max_out:
 	sw	zero,-20(s0)
 	li	a5,1
 	sw	a5,-24(s0)
-	j	.L145
-.L147:
+	j	.L150
+.L152:
 	lw	a5,-20(s0)
 	slli	a5,a5,2
 	lw	a4,-36(s0)
@@ -3663,17 +3729,17 @@ max_out:
 	lw	a3,-36(s0)
 	add	a5,a3,a5
 	lw	a5,0(a5)
-	bge	a4,a5,.L146
+	bge	a4,a5,.L151
 	lw	a5,-24(s0)
 	sw	a5,-20(s0)
-.L146:
+.L151:
 	lw	a5,-24(s0)
 	addi	a5,a5,1
 	sw	a5,-24(s0)
-.L145:
+.L150:
 	lw	a4,-24(s0)
 	li	a5,9
-	ble	a4,a5,.L147
+	ble	a4,a5,.L152
 	lw	a5,-20(s0)
 	mv	a0,a5
 	lw	s0,44(sp)
@@ -3910,8 +3976,8 @@ load_values_from_header:
 	addi	a1,a1,%lo(IMG)
 	call	calculate
 	sw	zero,-20(s0)
-	j	.L153
-.L154:
+	j	.L158
+.L159:
 	lw	a5,-20(s0)
 	slli	a5,a5,2
 	addi	a4,s0,-16
@@ -3924,10 +3990,10 @@ load_values_from_header:
 	lw	a5,-20(s0)
 	addi	a5,a5,1
 	sw	a5,-20(s0)
-.L153:
+.L158:
 	lw	a4,-20(s0)
 	li	a5,9
-	ble	a4,a5,.L154
+	ble	a4,a5,.L159
 	nop
 	nop
 	lw	ra,60(sp)
