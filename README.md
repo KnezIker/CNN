@@ -832,7 +832,7 @@ Without cmul accelerator there is:
 (((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 3,208,592 cycles.<br>
 With cmul accelerator, 38 cycles of mul fuction and additional 5 instructions for adding result of mul function to tmp variable are compressed to one instruction. So the calculation is:
 (((((40 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 1,813,072 cycles.<br>
-Which is 1.7 times faster.
+Which is 170% times faster.
 40 lines of L98 code couldn't be further accelerater without hardware for loops.
 They already exist in pulpissimo architecture, and are kinda complex to integrate, so they will be skipped for now.
 
@@ -1026,7 +1026,7 @@ L107 is directly above L106.<br>
 	j	.L108
 ```
 
-.L111 assembly code:
+.L108 assembly code:
 ```assembly
 .L108:
 	lw	a4,-52(s0)	# Load the value of h into register a4
@@ -1111,10 +1111,10 @@ L110 and L109 togeather have 52 cycles and will be called by L108 2 times (dimen
 However, last 8 of L110 will be executed only 1.1 times on average in that 4 loops, assuming channel values are random.
 So total number of cycles on average is:<br>
 ((46 + 3) * 2 + 3) * 2 + 1.1 * 8 = 211 cycles<br>
-L107 has additional 46 instructions, and its called by L112 which is caled by L106 24 times and they bring aditional 9 instructions so in total<br>
-(((46 + 3) * 2 + 3) * 2 + 1.1 * 8 + 55)*24 = 6384 cycles<br>
+L107 has additional 43 instructions, and its called by L112 (+ 6 instructions) which is caled by (+3 instructions) L106 24 times and they bring aditional 9 instructions so in total<br>
+(((46 + 3) * 2 + 3) * 2 + 1.1 * 8 + 52)*24 = 6384 cycles<br>
 With small amount aditional instructions, those loops will be called again 24 times, and 2 times for each layer 0 channel, giving total of around:<br>
-306,432 cycles.
+306,432 cycles.<br>
 
 The idea is to make hardware accelerator that will recieve 4 numbers, and decide which one is the greatest.
 When accelerator recieves nth number, it will automatically clear its memory, but keep its output:
@@ -1200,8 +1200,8 @@ That is done in separate pooling.s assembly code that will be integrated into cn
 void pooling1 (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH],
 int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], int dimension)
 {
-    int col;
-    int row;
+    //int col;
+    //int row;
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         int m;
         int j;
@@ -1284,3 +1284,68 @@ Only downside is that for now it won't work for odd numbers for dimmension. But 
 Explain changes in json file
 Go trough new assembly code
 Integrate mull accelerator into code*/
+
+Assembly is around the same up to the for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) because nothing is changed before that.
+Some jumps just have different name.
+But L107 is a little bit different
+Now the changed assembly code looks like this
+```assembly
+.L107:
+	lw	a4,-20(s0)		# Load the value of i into register a4
+	mv	a5,a4			# a5 = i
+	slli	a5,a5,3			# a5 = 8*i
+	add	a5,a5,a4		# a5 = 9*i
+	slli	a5,a5,8			# a5 = 256*9*i
+	mv	a4,a5			# a4 = 256*9*i
+	lw	a5,-56(s0)		# Load the base address of L0C into register a5
+	add	a3,a5,a4		# a3 = LOC[i]
+	lw	a4,-28(s0)		# Load the value of j into register a4
+	mv	a5,a4			# a5 = j
+	slli	a5,a5,1			# a5 = 2*j
+	add	a5,a5,a4		# a5 = 3*j
+	slli	a5,a5,3			# a5 = 8*3*j
+	lw	a4,-36(s0)		# Load the value of k into register a4
+	add	a5,a5,a4		# a5 = 8*3*j + k
+	slli	a5,a5,2			# a5 = 4*(8*3*j + k)
+	add	a3,a3,a5		# a3 = address of LOC[i][j][k]
+	lw	a4,-20(s0)		# Load the value of i into register a4
+	mv	a5,a4			# a5 = a4
+	slli	a5,a5,3			# a5 = 8*i
+	add	a5,a5,a4		# a5 = 9*i
+	slli	a5,a5,6			# a5 = 64*9*i
+	mv	a4,a5			# a4 = 64*9*i
+	lw	a5,-52(s0)		# Load the base address of L0CP into register a5
+	add	s1,a5,a4		# s1 = LOCP[i]
+	li	a2,24			# a2 = 24
+	lw	a1,-60(s0)		# a1 = dimmension
+	mv	a0,a3			# a0 = address of LOC[i][j][k]
+	call	pooling_asm_func	# Calling pooling_asm_func
+	mv	a3,a0			# a3 = result of pooling_asm_func
+	lw	a4,-24(s0)		# a4 = m
+	mv	a5,a4			# a5 = m
+	slli	a5,a5,1			# a5 = 2*m
+	add	a5,a5,a4		# a5 = 3*m
+	slli	a5,a5,2			# a5 = 4*3*m
+	lw	a4,-32(s0)		# a4 = n
+	add	a5,a5,a4		# a5 = 4*3*m + n
+	slli	a5,a5,2			# a5 = 4*(4*3*m + n)
+	add	a5,s1,a5		# a5 = address of LOCP[i][m][n]
+	sw	a3,0(a5)		# Save value of LOCP[i][m][n] = result of pooling_asm_func
+	lw	a4,-36(s0)		# a4 = k
+	lw	a5,-60(s0)		# a5 = dimmension
+	add	a5,a4,a5		# a5 = k + dimmension
+	sw	a5,-36(s0)		# Save incremented k
+	lw	a5,-32(s0)		# a5 = n
+	addi	a5,a5,1			# a5 = n + 1
+	sw	a5,-32(s0)		# Save incremented n
+```
+
+This time, L107 has 46 instructions and pooling_asm_func has 36 instructions (for dimmension = 2), totaling 82 instructions.<br>
+46 + 36 = 82<br>
+L107 will be called by L106 (+3 instructions) 24 times:<br>
+(46 + 36 + 3 ) * 24 = 2040 cycles<br>
+L106 has additional 7 instructions, and will be called by L108 (+ 3 instructions), which will be called by L105 (+ 3 instructions) 24 times:<br>
+((46 + 36 + 3 ) * 24 + 7 + 3 + 3) * 24 = 49,272 cycles<br>
+L105 will again be called 2 times for each layer 0 channel giving in totoal:<br>
+((46 + 36 + 3 ) * 24 + 7 + 3 + 3) * 24 * 2 = 98,544 cycles.<br>
+Compared to initial 306,432 cycles, accelerator made pooling faster by 311%<br>
