@@ -362,6 +362,20 @@ void       pooling1              (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_
             int k;
             for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) {
                 L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
+                /*                
+                col = k;
+                row = j;
+                for (int g = 0; g < dimension; g++) {
+                    for (int h = 0; h < dimension; h++) {
+                        if(L0C[i][j+g][k+h] > L0C[i][row][col])
+                        {
+                            col = k+h;
+                            row = j+g;
+                        }
+                    }
+                }
+                L0CP[i][m][n] = L0C[i][row][col]; 
+                */
             }
         }
     }
