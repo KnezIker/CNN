@@ -1,5 +1,5 @@
 sw/compiles
-models
-images
-sample
-values
+./models
+./images
+./sample
+./values
