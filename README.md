@@ -1134,3 +1134,10 @@ maxreset           Resets the accelerator
 ```
 Code for implementing accelerator is quite simple.
 Code for preparing core for max accelerator is nearly the same as the code for implementing cummulative accelerator.
+
+```verilog
+maxdim rx          Sets the dimension of memory in maxdim
+maxget rx          Gets the result value
+maxload rx, ry     Loads the accelerator
+maxreset           Resets the accelerator
+```
