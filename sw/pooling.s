@@ -7,14 +7,14 @@
 # int pooling_asm_func(int a, int b, int c, int d)
 # Input arguments a0 = *LOC[i][j][k], a1 = dimmension, a2 = LO_CHANNEL_WITH
 pooling_asm_func:
-    li a3, 0          # col_cnt = 0
-    li a4, 0          # row_cnt = 0
-    slli a2, a2, 2       # a2 = 4*LO_CHANNEL_WITH (number of address spaces)
-    mv a5, a0            # Address of LOC[i][j][k]
-    addi a6, a0, 4       # Address of LOC[i][j][k+1]
-    mrst                 # Reset accelerator
-    mdim a1              # Set dimmension
-    j .T0                # Jump to T0
+    li a3, 0            # col_cnt = 0
+    li a4, 0            # row_cnt = 0
+    slli a2, a2, 2      # a2 = 4*LO_CHANNEL_WITH (number of address spaces)
+    mv a5, a0           # Address of LOC[i][j][k]
+    addi a6, a0, 4      # Address of LOC[i][j][k+1]
+    mrst                # Reset accelerator
+    mdim a1             # Set dimmension
+    j .T0               # Jump to T0
 .T1:
     addi a5, a5, 8      # Take next LOC[i][j][k] address
     addi a6, a6, 8      # Take next LOC[i][j][k+1] address
@@ -29,8 +29,9 @@ pooling_asm_func:
     mget a0             # Get the result of the accelerator
     ret                 # Return
 .T3:
-    add a5, a0, a2      # Take next LOC[i][j][k] address
-    add a6, a0, a2      # Take next LOC[i][j][k+1] address
+    mul t1, a4 ,a2      # t1 = row_cnt * LO_CHANNEL_WITH
+    add a5, a0, t1      # Take next LOC[i][j][k] address
+    add a6, a0, t1      # Take next LOC[i][j][k+1] address
     li a3, 0            # Reset col_cnt
     j .T0               # Jump to T0
 
