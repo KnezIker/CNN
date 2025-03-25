@@ -1134,10 +1134,153 @@ maxreset           Resets the accelerator
 ```
 Code for implementing accelerator is quite simple.
 Code for preparing core for max accelerator is nearly the same as the code for implementing cummulative accelerator.
-
 ```verilog
-maxdim rx          Sets the dimension of memory in maxdim
-maxget rx          Gets the result value
-maxload rx, ry     Loads the accelerator
-maxreset           Resets the accelerator
+module cv32e40p_max(
+  input  logic        clk_i,
+  input  logic        rst_n_global_i,
+  input  logic        rst_p_forced_i,
+  input  logic        en_i,
+  input  logic        dim_i,
+  input  logic [31:0] a_i,
+  input  logic [31:0] b_i,
+  output logic [31:0] result_o
+);
+
+  logic [7:0]  dimension;
+  logic [7:0]  counter;
+  logic [31:0] result;
+
+  // FINDING MAX
+  always_ff @(posedge clk_i or negedge rst_n_global_i or posedge rst_p_forced_i) begin
+    if (!rst_n_global_i || rst_p_forced_i) begin
+      result   <= 32'b0;
+      result_o <= 32'b0;
+    end 
+    else if (en_i) begin
+      if (counter == dimension - 2) begin
+        if(a_i > result && a_i > b_i) begin
+          result   <= 32'b0;
+          result_o <= a_i;
+        end 
+        else if(b_i > result) begin
+          result   <= 32'b0;
+          result_o <= b_i;
+        end
+        else begin
+          result_o <= result;
+          result   <= 32'b0;
+        end         
+      end
+      else begin
+        if(a_i > result && a_i > b_i) result <= a_i;
+        else if(b_i > result) result <= b_i;
+      end
+    end
+  end
+  // INCREMENTING COUNTER
+  always_ff @(posedge clk_i or negedge rst_n_global_i or posedge rst_p_forced_i) begin
+    if (!rst_n_global_i || rst_p_forced_i) counter <= 8'b0;
+    else if (en_i) begin
+      if(counter == dimension - 2) counter <= 8'b00000000;
+      else counter <= counter + 2;
+    end
+  end
+  // LOADING DIMENSION
+  always_ff @(posedge clk_i or negedge rst_n_global_i or posedge rst_p_forced_i) begin
+    if (!rst_n_global_i || rst_p_forced_i) dimension <= 8'b00000100;
+    else if (dim_i) dimension <= a_i;
+  end
+endmodule  // cv32e40p_max
 ```
+
+Now, using accelerator by itself won't save that much cycles, but using it in dedicated assembly code will accelerate code a lot.
+That is done in separate pooling.s assembly code that will be integrated into cnn.h c code like this:
+
+```c
+void pooling1 (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH],
+int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], int dimension)
+{
+    int col;
+    int row;
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        for (j = 0, m = 0; j < L0_CHANNEL_WITH; j = j + dimension, m++) {
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) {
+                L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
+		/*                
+                col = k;
+                row = j;
+                for (int g = 0; g < dimension; g++) {
+                    for (int h = 0; h < dimension; h++) {
+                        if(L0C[i][j+g][k+h] > L0C[i][row][col])
+                        {
+                            col = k+h;
+                            row = j+g;
+                        }
+                    }
+                }
+                L0CP[i][m][n] = L0C[i][row][col]; 
+                */
+            }
+        }
+    }
+}
+```
+Commented lines represent what was accelerated by line : 
+```c
+L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
+```
+
+And pooling_asm_func is defined as extern function at the top of cnn.h file:
+```c
+extern int pooling_asm_func(int32_t* address, int dimension, int channel_width);
+```
+And written in pooling.s file:
+
+```assembly
+# pooling_asm.S
+.text
+.globl pooling_asm_func  # Global symbol (available from C)
+
+# for dimmension = 2, its 29 cycles
+
+# int pooling_asm_func(int a, int b, int c, int d)
+# Input arguments a0 = *LOC[i][j][k], a1 = dimmension, a2 = LO_CHANNEL_WITH
+pooling_asm_func:
+    li a3, 0            # col_cnt = 0
+    li a4, 0            # row_cnt = 0
+    slli a2, a2, 2      # a2 = 4*LO_CHANNEL_WITH (number of address spaces)
+    mv a5, a0           # Address of LOC[i][j][k]
+    addi a6, a0, 4      # Address of LOC[i][j][k+1]
+    mrst                # Reset accelerator
+    mdim a1             # Set dimmension
+    j .T0               # Jump to T0
+.T1:
+    addi a5, a5, 8      # Take next LOC[i][j][k] address
+    addi a6, a6, 8      # Take next LOC[i][j][k+1] address
+.T0:
+    lw a7,0(a5)         # LOC[i][j][k]
+    lw t0,0(a6)         # LOC[i][j][k+1]
+    mld a7, t0          # Load accelerator with LOC[i][j][k+1] and LOC[i][j][k]
+    addi a3, a3, 2      # Increment col_cnt
+    blt	a3,a1,.T1       # If col_cnt < dimmension jump to T1
+    addi a4, a4, 1      # Increment row_cnt
+    blt	a4,a1,.T3       # If row_cnt < dimmension jump to T3
+    mget a0             # Get the result of the accelerator
+    ret                 # Return
+.T3:
+    mul t1, a4 ,a2      # t1 = row_cnt * LO_CHANNEL_WITH
+    add a5, a0, t1      # Take next LOC[i][j][k] address
+    add a6, a0, t1      # Take next LOC[i][j][k+1] address
+    li a3, 0            # Reset col_cnt
+    j .T0               # Jump to T0
+```
+The main acceleration lies in skipping calculation of LOC[i][j][k] in every for loop like before.
+Only downside is that for now it won't work for odd numbers for dimmension. But code can be easily changed to support that.
+/*TODO:
+Explain changes in json file
+Go trough new assembly code
+Integrate mull accelerator into code*/
