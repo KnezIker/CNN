@@ -62,6 +62,15 @@ module cv32e40p_ex_stage
     input logic               cml_en_i,
     input logic               cml_get_i,
     input logic               cml_rst_i,
+
+    // MAX signals from ID stage
+    input logic [31:0] max_operand_a_i,
+    input logic [31:0] max_operand_b_i,
+    input logic max_en_i,
+    input logic max_get_i,
+    input logic max_dim_i,
+    input logic max_rst_i,
+
     // Multiplier signals
     input mul_opcode_e        mult_operator_i,
     input logic        [31:0] mult_operand_a_i,
@@ -160,6 +169,7 @@ module cv32e40p_ex_stage
 
   logic [31:0] alu_result;
   logic [31:0] cml_result;
+  logic [31:0] max_result;
   logic [31:0] mult_result;
   logic        alu_cmp_result;
 
@@ -204,6 +214,7 @@ module cv32e40p_ex_stage
       regfile_alu_waddr_fw_o = regfile_alu_waddr_i;
       if (alu_en_i) regfile_alu_wdata_fw_o = alu_result;
       if (cml_en_i || cml_get_i) regfile_alu_wdata_fw_o = cml_result;
+      if (max_en_i || max_get_i || max_dim_i) regfile_alu_wdata_fw_o = max_result;
       if (mult_en_i) regfile_alu_wdata_fw_o = mult_result;
       if (csr_access_i) regfile_alu_wdata_fw_o = csr_rdata_i;
     end
@@ -285,6 +296,17 @@ module cv32e40p_ex_stage
     .a_i            (cml_operand_a_i),
     .b_i            (cml_operand_b_i),
     .result_o       (cml_result)
+  );
+
+  cv32e40p_max max_i (
+    .clk_i          (clk),
+    .rst_n_global_i (rst_n),
+    .rst_p_forced_i (max_rst_i),
+    .en_i           (max_en_i),
+    .dim_i          (max_dim_i),
+    .a_i            (max_operand_a_i),
+    .b_i            (max_operand_b_i),
+    .result_o       (max_result)
   );
 
 

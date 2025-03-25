@@ -186,6 +186,13 @@ module cv32e40p_core
   logic               cml_get;
   logic               cml_rst;
 
+  // MAX Control
+  logic        [31:0] max_operand_a;
+  logic        [31:0] max_operand_b;
+  logic               max_en;
+  logic               max_get;
+  logic               max_dim;
+  logic               max_rst;
 
   // Multiplier Control
   mul_opcode_e                              mult_operator_ex;
@@ -600,12 +607,21 @@ module cv32e40p_core
       .regfile_alu_we_ex_o   (regfile_alu_we_ex),
       .regfile_alu_waddr_ex_o(regfile_alu_waddr_ex),
 
-      //CUMULATIVE
+      // CUMULATIVE
       .cml_operand_a_ex_o(cml_operand_a),
       .cml_operand_b_ex_o(cml_operand_b),
       .cml_en_ex_o(cml_en),
       .cml_get_ex_o(cml_get),
       .cml_rst_ex_o(cml_rst),
+
+      // MAX
+      .max_operand_a_ex_o(max_operand_a),
+      .max_operand_b_ex_o(max_operand_b),
+      .max_en_ex_o(max_en),
+      .max_get_ex_o(max_get),
+      .max_dim_ex_o(max_dim),
+      .max_rst_ex_o(max_rst),
+  
 
       // MUL
       .mult_operator_ex_o   (mult_operator_ex),  // from ID to EX stage
@@ -780,12 +796,20 @@ module cv32e40p_core
       .alu_is_subrot_i (alu_is_subrot_ex),  // from ID/Ex pipe registers
       .alu_clpx_shift_i(alu_clpx_shift_ex),  // from ID/EX pipe registers
 
-      // cumulative signals from ID stage
+      // Cumulative signals from ID stage
       .cml_operand_a_i(cml_operand_a),
       .cml_operand_b_i(cml_operand_b),
       .cml_en_i(cml_en),
       .cml_get_i(cml_get),
       .cml_rst_i(cml_rst),
+
+      // Max signals from ID stage
+      .max_operand_a_i(max_operand_a),
+      .max_operand_b_i(max_operand_b),
+      .max_en_i(max_en),
+      .max_get_i(max_get),
+      .max_dim_i(max_dim),
+      .max_rst_i(max_rst),
       
       // Multipler
       .mult_operator_i   (mult_operator_ex),  // from ID/EX pipe registers

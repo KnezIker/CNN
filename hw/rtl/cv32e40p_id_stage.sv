@@ -122,6 +122,14 @@ module cv32e40p_id_stage
     output logic        cml_get_ex_o,
     output logic        cml_rst_ex_o,
 
+    // MAX
+    output logic [31:0] max_operand_a_ex_o,
+    output logic [31:0] max_operand_b_ex_o,
+    output logic        max_en_ex_o,
+    output logic        max_get_ex_o,
+    output logic        max_dim_ex_o,
+    output logic        max_rst_ex_o,
+
     // MUL
     output mul_opcode_e        mult_operator_ex_o,
     output logic        [31:0] mult_operand_a_ex_o,
@@ -372,6 +380,11 @@ module cv32e40p_id_stage
   logic cml_en;
   logic cml_rst;
   logic cml_get;
+  // MAX Control
+  logic max_en;
+  logic max_get;
+  logic max_dim;
+  logic max_rst;
   // Multiplier Control
   mul_opcode_e mult_operator;  // multiplication operation selection
   logic mult_en;  // multiplication is used instead of ALU
@@ -1023,7 +1036,13 @@ module cv32e40p_id_stage
       // CUMULATIVE signals
       .cml_en_o(cml_en), 
       .cml_rst_o(cml_rst),
-      .cml_get_o(cml_get), 
+      .cml_get_o(cml_get),
+      
+      // MAX signals
+      .max_en_o(max_en),
+      .max_get_o(max_get),
+      .max_dim_o(max_dim),
+      .max_rst_o(max_rst),
 
       // MUL signals
       .mult_operator_o   (mult_operator),
@@ -1438,6 +1457,13 @@ module cv32e40p_id_stage
       cml_get_ex_o          <= 0;
       cml_rst_ex_o          <= 0;
 
+      max_operand_a_ex_o    <= 0;
+      max_operand_b_ex_o    <= 0;
+      max_en_ex_o           <= 0;
+      max_get_ex_o          <= 0;
+      max_dim_ex_o          <= 0;
+      max_rst_ex_o          <= 0;
+
       mult_operator_ex_o     <= MUL_MAC32;
       mult_operand_a_ex_o    <= '0;
       mult_operand_b_ex_o    <= '0;
@@ -1535,6 +1561,15 @@ module cv32e40p_id_stage
           cml_rst_ex_o       <= cml_rst;
         end
 
+        max_en_ex_o  <= max_en;
+        max_get_ex_o <= max_get;
+        max_dim_ex_o <= max_dim;  
+        if (max_en || max_get || max_dim) begin
+          max_operand_a_ex_o <= alu_operand_a;
+          max_operand_b_ex_o <= alu_operand_b;
+          max_rst_ex_o       <= cml_rst;
+        end
+
         mult_en_ex_o <= mult_en;
         if (mult_int_en) begin
           mult_operator_ex_o    <= mult_operator;
@@ -1630,6 +1665,12 @@ module cv32e40p_id_stage
 
         cml_get_ex_o         <= 1'b0;
 
+        max_en_ex_o          <= 1'b0;
+
+        max_get_ex_o         <= 1'b0;
+
+        max_dim_ex_o         <= 1'b0;
+
       end else if (csr_access_ex_o) begin
         //In the EX stage there was a CSR access, to avoid multiple
         //writes to the RF, disable regfile_alu_we_ex_o.
@@ -1720,7 +1761,8 @@ module cv32e40p_id_stage
   // and that EX stage is ready to receive flushed instruction immediately
   property p_branch_taken_ex;
     @(posedge clk) disable iff (!rst_n) (branch_taken_ex == 1'b1) |-> ((ex_ready_i == 1'b1) &&
-                                                                          (alu_en == 1'b0) && (cml_en == 1'b0) && (cml_get == 1'b0) && (apu_en == 1'b0) &&
+                                                                          (alu_en == 1'b0) && (cml_en == 1'b0) && (cml_get == 1'b0) &&
+                                                                          (max_en) && (max_get) && (max_dim) && (apu_en == 1'b0) &&
                                                                           (mult_en == 1'b0) && (mult_int_en == 1'b0) &&
                                                                           (mult_dot_en == 1'b0) && (regfile_we_id == 1'b0) &&
                                                                           (regfile_alu_we_id == 1'b0) && (data_req_id == 1'b0));
@@ -1831,7 +1873,8 @@ module cv32e40p_id_stage
   property p_illegal_2;
     @(posedge clk) disable iff (!rst_n) (illegal_insn_dec == 1'b1) |-> !(ebrk_insn_dec || mret_insn_dec || uret_insn_dec || dret_insn_dec ||
                                                                             ecall_insn_dec || wfi_insn_dec || fencei_insn_dec ||
-                                                                            alu_en|| cml_en || cml_get || mult_int_en || mult_dot_en || apu_en ||
+                                                                            alu_en|| cml_en || max_en || max_get || max_dim || cml_get || 
+                                                                            mult_int_en || mult_dot_en || apu_en ||
                                                                             regfile_we_id || regfile_alu_we_id ||
                                                                             csr_op != CSR_OP_READ || data_req_id);
   endproperty

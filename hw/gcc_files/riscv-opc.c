@@ -204,6 +204,10 @@ const struct riscv_opcode riscv_opcodes[] =
 {"cmul",  	0, INSN_CLASS_I,   "s,t",  MATCH_CMUL, MASK_CMUL, match_opcode, 0 },
 {"cget",  	0, INSN_CLASS_I,   "d",  MATCH_CGET, MASK_CGET, match_opcode, 0 },
 {"crst",  	0, INSN_CLASS_I,   "",  MATCH_CRST, MASK_CRST, match_opcode, 0 },
+{"mld",  	0, INSN_CLASS_I,   "s,t",  MATCH_MLD, MASK_MLD, match_opcode, 0 },
+{"mget",  	0, INSN_CLASS_I,   "d",  MATCH_MGET, MASK_MGET, match_opcode, 0 },
+{"mrst",  	0, INSN_CLASS_I,   "",  MATCH_MRST, MASK_MRST, match_opcode, 0 },
+{"mdim",  	0, INSN_CLASS_I,   "s",  MATCH_MDIM, MASK_MDIM, match_opcode, 0 },
 {"unimp",       0, INSN_CLASS_C,   "",  0, 0xffffU,  match_opcode, INSN_ALIAS },
 {"unimp",       0, INSN_CLASS_I,   "",  MATCH_CSRRW | (CSR_CYCLE << OP_SH_CSR), 0xffffffffU,  match_opcode, 0 }, /* csrw cycle, x0 */
 {"ebreak",      0, INSN_CLASS_C,   "",  MATCH_C_EBREAK, MASK_C_EBREAK, match_opcode, INSN_ALIAS },
