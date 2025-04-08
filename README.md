@@ -1349,3 +1349,16 @@ L106 has additional 7 instructions, and will be called by L108 (+ 3 instructions
 L105 will again be called 2 times for each layer 0 channel giving in totoal:<br>
 ((46 + 36 + 3 ) * 24 + 7 + 3 + 3) * 24 * 2 = 98,544 cycles.<br>
 Compared to initial 306,432 cycles, accelerator made pooling faster by 311%<br>
+
+## Testing acceleration
+
+To test code on pulp platform, its needed to copy .c and .h files (including values.h) and paste them into hello world folder, in pulp-rt-examples folder.
+The main cnn.c file should be renamed into test.c for code to compile.
+Or, alternatively to change name of main folder in makefile.
+And thats it, run the program the same as the hello world program.
+
+Results:
+
+Running unaccelerated program with O0 optimisation results in:
+3,460,246 instructions and simulation takes 2 hours and 30 minutes.
+Running accelerated program with O0 optimisation results in:
