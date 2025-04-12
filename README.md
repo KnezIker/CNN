@@ -1352,12 +1352,77 @@ Compared to initial 306,432 cycles, accelerator made pooling faster by 311%<br>
 
 ## Testing acceleration
 
-To test code on pulp platform, its needed to copy .c and .h files (including values.h) and paste them into hello world folder, in pulp-rt-examples folder.
+Classic cnn code, without any accelerations could be run in visual studio code for example with standard gcc compiler.
+However, custom instructions couldn't be tested there, because they are specifically made for cv32e40p core.
+The right place to test those instructions is pulpissimo platform.
+To test code on pulpissimo platform, its needed to copy .c and .h files (including values.h) and paste them into hello world folder, in pulp-rt-examples folder.
 The main cnn.c file should be renamed into test.c for code to compile.
-Or, alternatively to change name of main folder in makefile.
-And thats it, run the program the same as the hello world program.
+Or, alternatively open MakeFile in:
+pulpissimo/sw/pulp-rt-examples/hello/
+It looks something like:
+```
+PULP_APP = test
+PULP_APP_FC_SRCS = test.c
+PULP_APP_HOST_SRCS = test.c
+PULP_CFLAGS = -O0 -g
 
-Results:
+include $(PULP_SDK_HOME)/install/rules/pulp_rt.mk
+```
+There instead of test.c, other program name could be typed. No need to add .h files there.
+Also this line
+```
+PULP_CFLAGS = -O0 -g
+```
+Configures optimisation, so that could also be changed.
+
+Now custom instructions could be added into code, thats it, run the program the same as the hello world program.
+
+## Debugging and Problems
+
+Working on this project I encountered couple of problems:
+
+One of them was declaring output matrices like L0C, L0CP, L2C, L2CP couldn't be done privatly in functions.
+If declared in such way for some reason assembler doesn't assemble them, so they dont even exist in assembly code.
+Soulution is to just declare them globaly, and everything will work fine.
+However, that realisation took some time, and i aslo discovered that:
+malloc and free do not exist in pulpissimo platform.
+But pulpissimo has its own counterparts like:<br>
+
+void *pi_l1_malloc(int cid, int size);<br>
+void pi_l1_free(int cid, void *chunk, int size);<br>
+void *pi_l2_malloc(int size);<br>
+void pi_l2_free(void *_chunk, int size);<br>
+
+Other pulpissimo functions (like uart functions) could be found in:<br>
+pulpissimo/sw/pulp-runtime/include/pulp.h<br>
+
+Other problems were manly hardware realated (forgot to add keyword signed in cmul accelerator code).
+
+### Debugging tools in pulpissimo platform:
+
+1. Transcript and Trace_core_log<br>
+   Transcript and Trace_core_log are textual files that could be found in pulpissimo/sw/pulp-rt-examples/hello/build/ .
+   They keep terminal messages (Transcript) and show what assembly instructions were executed (Trace_core_log)<br>
+2. Assembly code<br>
+   There is makefile command to convert .c code into .s code.<br>
+   
+   ```
+   riscv32-unknown-elf-gcc -march=rv32im -mabi=ilp32 -O2 -S matrix.c -o matrix.s
+   ```
+   That is a great way to check some potential errors in code directly in assembly.
+   Also very good for checking memory usage.<br>
+3. Simulation GUI<br>
+   If error is persistent, bring some heavy artiliery with this maefile command<br>
+   
+   ```
+   make clean all run gui=1
+   ```
+   This will open QuestaSim and there every hardware signal could be checked<br>
+4. Printf("TRALALERO TRALALA")<br>
+   Classic pritnf debugging is often the best type of debugging.
+   
+
+## Results
 
 Running unaccelerated program with O0 optimisation results in:
 3,460,246 instructions and simulation takes 2 hours and 30 minutes.
