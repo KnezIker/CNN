@@ -1,6 +1,6 @@
 # pooling_asm.S
 .text
-.globl pooling_asm_func  # Global symbol (available from C)
+.global pooling_asm_func  # Global symbol (available from C)
 
 # for dimmension = 2, its 29 cycles
 

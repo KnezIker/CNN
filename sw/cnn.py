@@ -215,16 +215,35 @@ def generate_single_header_file(model, integer_bits, fractional_bits):
         random_image = x_test[random_index]
         random_value = y_test[random_index]
         f.write(f"// Random mnist image number: {random_value}\n")
-        for j in range(28):
-            for k in range(28):
-                f.write(f"#define IMG{j:02d}{k:02d} {int(random_image[j, k])}\n")
-        f.write("\n")
-
+        f.write('''  
+                    int32_t** IMG = NULL;\n
+                    IMG = (int32_t**)pi_l2_malloc(28 * sizeof(int32_t*));\n
+	                if (!IMG) 
+	                {
+    	                printf("Failed to allocate IMG kernels!\n");
+    	                return;
+	                }
+	                for (int k = 0; k < 28; k++) {
+    	                IMG[k] = (int32_t**)pi_l2_malloc(L0_CHANNEL_WIDTH * sizeof(int32_t*));
+    	                if (!IMG[k]) 
+    	                {
+        	                printf("Failed to allocate IMG rows!\n");
+        	                for (int i = 0; i < k; i++) 
+        	                {
+            	                pi_l2_free(IMG[i], L0_CHANNEL_WIDTH * sizeof(int32_t*));
+        	                }
+        	                pi_l2_free(IMG, L0_NUMBER_OF_KERNELS * sizeof(int32_t**));
+        	                return;
+    	                }
+                    }
+                ''' 
+               )
         #Saving that image in matrix
         f.write("uint8_t IMG[28][28] = {\n")
         for i in range(28):
             f.write("  {")
-            f.write(", ".join([f"IMG{i:02d}{j:02d}" for j in range(28)]))
+            for j in range(28):
+                f.write(f"{int(random_image[i, j])}, ")
             if i < 27:
                 f.write("},\n")
             else:

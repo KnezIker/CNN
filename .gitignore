@@ -1,5 +1,6 @@
 sw/compiles
-./models
-./images
-./sample
-./values
+models
+images
+sample
+values
+test_pgm_images

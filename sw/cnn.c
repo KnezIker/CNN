@@ -94,6 +94,7 @@ void load_values_from_csv()
 void load_values_from_header()
 { 
     int32_t OUT  [NUMBER_OF_OUTPUTS];
+    printf("Start\n");
     //load_image(file_path, IMG);
     calculate(OUT, IMG, L0W, L0B, L2W, L2B, L5W, L5B);
     for(int i = 0; i < 10; i++)

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+//#include "Load_and_print.h"
 
 #ifndef IMG_WIDTH
 #define IMG_WIDTH                   28
@@ -75,211 +76,48 @@
         -Comment "FIXED POINT" in load_layer_i functions, no need to uncomment anything there
         -Uncomment floating point part of code in sigmoid function and comment fixed point part of code
 */
-extern int pooling_asm_func(int32_t* address, int dimension, int channel_width);
+/*
+int pooling_asm_func(int32_t* a, int32_t b, int32_t c) {
+    int32_t result;
+    __asm__ volatile (
+        "li a3, 0\n\t"
+        "li a4, 0\n\t"
+        "slli a2, a2, 2\n\t"
+        "mv a5, a0\n\t"
+        "addi a6, a0, 4\n\t"
+        "mrst\n\t"
+        "mdim a1\n\t"
+        "j 1f\n"                // Forward jump to label 1
+        "0:\n\t"                // Label 0
+        "addi a5, a5, 8\n\t"
+        "addi a6, a6, 8\n\t"
+        "1:\n\t"                // Label 1
+        "lw a7, 0(a5)\n\t"
+        "lw t0, 0(a6)\n\t"
+        "mld a7, t0\n\t"
+        "addi a3, a3, 2\n\t"
+        "blt a3, a1, 0b\n\t"    // Backward jump to label 0
+        "addi a4, a4, 1\n\t"
+        "blt a4, a1, 2f\n\t"    // Forward jump to label 2
+        "mget %0\n\t"
+        "ret\n"
+        "2:\n\t"                // Label 2
+        "mul t1, a4, a2\n\t"
+        "add a5, a0, t1\n\t"
+        "add a6, a0, t1\n\t"
+        "li a3, 0\n\t"
+        "j 1b\n"                // Backward jump to label 1
+        : "=r" (result)
+        : "r"(a), "r"(b), "r"(c)
+        : "a3","a4","a5","a6","a7","t0","t1"
+    );
+    return result;
+}
+*/
+
 static inline int32_t mul        (int32_t a, int32_t b) 
 {
     return (int32_t)(((int64_t)a * (int64_t)b) >> DECIMAL_BITS);
-}
-void       load_image            (const char *filename, uint8_t IMG[IMG_HEIGHT][IMG_WIDTH]) 
-{    
-    FILE *file = fopen(filename, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", filename);
-        return;
-    }
-
-    char magic[3];
-    int width, height, max_value, trash;
-    fscanf(file, "%2s", magic);
-    fscanf(file, "%d %d", &width, &height);
-    fscanf(file, "%d", &max_value);
-    fscanf(file, "%d", &trash);
-
-    for (int i = 0; i < IMG_HEIGHT; i++) {
-        for (int j = 0; j < IMG_WIDTH; j++) {
-            fscanf(file, "%c", &IMG[i][j]);
-        }
-    }
-    fclose(file);
-}
-void       load_layer_0          (const char *weights, const char *biases, int32_t L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], int32_t L0B [L0_NUMBER_OF_KERNELS])
-{
-    FILE *file = fopen(weights, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", weights);
-        return;
-    }
-    char line[30*L0_NUMBER_OF_KERNELS]; // one weight is represented by less than 30 characters
-    char *token;
-
-    for (int i = 0; i < L0_KERNEL_DIMENSIONS; i++) {
-        for (int j = 0; j < L0_KERNEL_DIMENSIONS; j++) {
-            fgets(line, sizeof(line), file);
-            token = strtok(line, ",");
-            for (int k = 0; k < L0_NUMBER_OF_KERNELS; k++) {
-                L0K[k][i][j] = strtof(token, NULL);
-                L0K[k][i][j] = L0K[k][i][j] << CONVERT_BITS;    //"FIXED POINT"
-                token = strtok(NULL, ",");
-            }
-        }
-    }
-
-    fclose(file);
-    file = fopen(biases, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", biases);
-        return;
-    }
-    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
-        fgets(line, sizeof(line), file);
-        L0B[i] = strtof(line, NULL);
-        L0B[i] = L0B[i] << CONVERT_BITS;          //"FIXED POINT"              
-    }
-    fclose(file);
-}
-void       load_layer_2          (const char *weights, const char *biases, int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], int32_t L2B [L2_NUMBER_OF_KERNELS])
-{
-    FILE *file = fopen(weights, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", weights);
-        return;
-    }
-    char line[30*L2_NUMBER_OF_KERNELS]; // one weight is represented by less than 30 characters
-    char *token;
-
-    for (int i = 0; i < L2_KERNEL_DIMENSIONS; i++) {
-        for (int j = 0; j < L2_KERNEL_DIMENSIONS; j++) {
-            for (int k = 0; k < L0_NUMBER_OF_KERNELS; k++) {
-                fgets(line, sizeof(line), file);
-                token = strtok(line, ",");
-                for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++)
-                {
-                    L2K[g][k][i][j] = strtof(token, NULL);
-                    L2K[g][k][i][j] = L2K[g][k][i][j] << CONVERT_BITS;          //"FIXED POINT"
-                    token = strtok(NULL, ",");              
-                }
-            }
-        }
-    }
-
-    file = fopen(biases, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", biases);
-        return;
-    }
-    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
-        fgets(line, sizeof(line), file);
-        L2B[i] = strtof(line, NULL);
-        L2B[i] = L2B[i] << CONVERT_BITS;              //"FIXED POINT"
-    }
-    fclose(file);
-}
-void       load_layer_5          (const char *weights, const char *biases, int32_t L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], int32_t L5B [NUMBER_OF_OUTPUTS])
-{
-    FILE *file = fopen(weights, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", weights);
-        return;
-    }
-    char line[30*NUMBER_OF_OUTPUTS]; // one weight is represented by less than 30 characters
-    char *token;
-    
-    for (int i = 0; i < L5_NUMBER_OF_NODES; i++) {
-        fgets(line, sizeof(line), file);
-        token = strtok(line, ",");
-        for(int j = 0; j < NUMBER_OF_OUTPUTS; j++)
-        {
-            L5W[j][i] = strtof(token, NULL);
-            L5W[j][i] = L5W[j][i] << CONVERT_BITS;            //"FIXED POINT"
-            token = strtok(NULL, ",");                    
-        }
-    }
-    fclose(file);
-
-    file = fopen(biases, "rb");
-    if (file == NULL) {
-        printf("Error: cant open file %s\n", biases);
-        return;
-    }
-    for (int i = 0; i < NUMBER_OF_OUTPUTS; i++) {
-        fgets(line, sizeof(line), file);
-        L5B[i] = strtof(line, NULL);
-        L5B[i] = L5B[i] << CONVERT_BITS;              //"FIXED POINT"
-    }
-    fclose(file);
-}
-void       print_image           (uint8_t IMG [IMG_HEIGHT][IMG_WIDTH])
-{
-    // printf image
-    for (int i = 0; i < IMG_HEIGHT; i++) {
-        for (int j = 0; j < IMG_WIDTH; j++) {
-            printf("%3d ", IMG[i][j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-void       print_layer_0         (int32_t L0K [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS], int32_t L0B [L0_NUMBER_OF_KERNELS])
-{
-    //print layer 0 kernels
-    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
-        for (int j = 0; j < L0_KERNEL_DIMENSIONS; j++) {
-            for (int k = 0; k < L0_KERNEL_DIMENSIONS; k++) {
-                printf("%d ", L0K[i][j][k]);            //"FIXED POINT"
-                //printf("%f ", L0K[i][j][k]);          //"FLOATING POINT"
-            }
-            printf("\n");
-        }
-        printf("\n\n\n");
-    }
-    //print layer 0 biases
-    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
-        printf("%d ", L0B[i]);                //"FIXED POINT"
-        //printf("%f ", L0B[i]);              //"FLOATING POINT"
-    }
-    printf("\n");
-}
-void       print_layer_2         (int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], int32_t L2B  [L2_NUMBER_OF_KERNELS])
-{
-    //print layer 2 kernels
-    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
-        for (int j = 0; j < L0_NUMBER_OF_KERNELS; j++) {
-            for (int k = 0; k < L2_KERNEL_DIMENSIONS; k++) {
-                for (int g = 0; g < L2_KERNEL_DIMENSIONS; g++) {
-                    printf("%d ", L2K[i][j][k][g]);           //"FIXED POINT"
-                    //printf("%f ", L2K[i][j][k][g]);         //"FLOATING POINT"
-                }
-                printf("\n");
-            }
-            printf("%d.%d\n",i,j);
-        }
-    }
-
-    //print layer 2 biases
-    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
-        printf("%d ", L2B[i]);            //"FIXED POINT"
-        //printf("%f ", L2B[i]);          //"FLOATING POINT"
-    }
-    printf("\n\n\n");
-}
-void       print_layer_5         (int32_t L5W [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES], int32_t L5B [NUMBER_OF_OUTPUTS])
-{
-    //print layer 5 weights
-    for (int i = 0; i < NUMBER_OF_OUTPUTS; i++) {
-        for (int j = 0; j < L5_NUMBER_OF_NODES; j++) {
-            printf("%d %d\n", j, L5W[i][j]);                //"FIXED POINT"
-            //printf("%d %f\n", j, L5W[i][j]);              //"FLOATING POINT"
-        }
-        printf("\n");
-        printf("Weights for output %d\n\n",i);
-    }
-
-    //print layer 5 biases
-    for (int i = 0; i < NUMBER_OF_OUTPUTS; i++) {
-        printf("%d ", L5B[i]);            //"FIXED POINT"
-        //printf("%f ", L5B[i]);              //"FLOATING POINT"
-    }
-    printf("\n");
 }
 int32_t    sigmoid               (int32_t i)
 {   
@@ -361,8 +199,7 @@ void       pooling1              (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_
             int n;
             int k;
             for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) {
-                L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
-                /*                
+                //L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH                
                 col = k;
                 row = j;
                 for (int g = 0; g < dimension; g++) {
@@ -375,7 +212,6 @@ void       pooling1              (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_
                     }
                 }
                 L0CP[i][m][n] = L0C[i][row][col]; 
-                */
             }
         }
     }
@@ -409,7 +245,6 @@ void       pooling2              (int32_t L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL
 }
 void       calc_layer_2_Channels (int32_t L2C[L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH], int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH], int32_t L2K [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS], int32_t L2B [L2_NUMBER_OF_KERNELS])
 {
-    printf("\n\n\n");
     int32_t temp = 0;
     for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
         for (int j = 0; j < L2_CHANNEL_WITH  ; j++) {
@@ -480,10 +315,15 @@ void       calculate(
     int32_t L2C  [L2_NUMBER_OF_KERNELS][L2_CHANNEL_WITH][L2_CHANNEL_WITH];                                 // Layer2 channels
     int32_t L2CP [L2_NUMBER_OF_KERNELS][L3_CHANNEL_WITH][L3_CHANNEL_WITH];                                 // Layer2 pooled channels
     //------TEST SIGNLE IMAGE------
+    printf("Layer0\n");
     calc_layer_0_Channels(L0C, IMG, L0K, L0B);
+    printf("Pooling1\n");
     pooling1(L0CP, L0C, L1_POOL_DIMENSIONS);
+    printf("Layer2\n");
     calc_layer_2_Channels(L2C, L0CP, L2K, L2B);
+    printf("Pooling2\n");
     pooling2(L2CP, L2C, L3_POOL_DIMENSIONS);
+    printf("Layer5\n\n");
     calc_layer_5_outputs(OUT, L2CP, L5W, L5B);
 
    //------TEST MULTIPLE IMAGES------
@@ -519,16 +359,4 @@ void       calculate(
     }
     printf("\n");
      */
-}
-void       load_weights(
-        int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS],
-        int32_t L0B  [L0_NUMBER_OF_KERNELS],
-        int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS],
-        int32_t L2B  [L2_NUMBER_OF_KERNELS],
-        int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES],
-        int32_t L5B  [NUMBER_OF_OUTPUTS])
-{
-    load_layer_0("../values/machine_readable_form/layer_0_weights.csv","../values/machine_readable_form/layer_0_biases.csv", L0K, L0B);
-    load_layer_2("../values/machine_readable_form/layer_2_weights.csv","../values/machine_readable_form/layer_2_biases.csv", L2K, L2B);
-    load_layer_5("../values/machine_readable_form/layer_5_weights.csv","../values/machine_readable_form/layer_5_biases.csv", L5W, L5B);
 }
