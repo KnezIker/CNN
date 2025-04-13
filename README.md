@@ -1225,7 +1225,7 @@ endmodule  // cv32e40p_max
 
 ## Testing the accelerated code
 
-Now that there are cummulative and pooling custom instructions, they could be implemented into code into all layers:<br>
+Now that there are cummulative and pooling custom instructions, they could be implemented into code in all layers:<br>
 Firstly, it would be nice to implement custom instructions in function wrappers, so they could be used more naturally in c.
 ```c
 void cmul(int32_t ra, int32_t rb) {
