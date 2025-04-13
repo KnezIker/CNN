@@ -1,7 +1,7 @@
 # CNN
 ## Content
 [Abstract](#Abstract)<br>
-[CNN structure](#CNN structure)<br>
+[CNN structure](#CNN-structure)<br>
 [CNN in detail]<br>
 [The code overview]<br>
 [Following assembly code]<br>
