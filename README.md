@@ -1428,3 +1428,7 @@ Running unaccelerated program with O0 optimisation results in:
 3,344,060 instructions and simulation takes 2 hours and 30 minutes.
 Running accelerated program with O0 optimisation results in:
 2,501,686 instructions and simulation takes 1 hour and 48 minutes.
+
+<div align="center">
+  <img src="doc/Very_nice.png" alt="Opis slike" width="300" />
+</div>
