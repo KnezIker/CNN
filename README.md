@@ -2,7 +2,7 @@
 ## Content
 [Abstract](#Abstract)<br>
 [CNN structure](#CNN-structure)<br>
-[CNN in detail]<br>
+[CNN in detail](#CNN-in-detail)<br>
 [The code overview]<br>
 [Following assembly code]<br>
 	[calc_layer_0_Channels function]<br>
