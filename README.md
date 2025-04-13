@@ -12,7 +12,7 @@
 [Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
 [Testing acceleration](#Testing-acceleration)<br>
 [Debugging and Problems](#Debugging-and-Problems)<br>
-	[Debugging tools in pulpissimo platform](#Debugging-tools-in-pulpissimo-platform)<br>
+	[Debugging tools in pulpissimo platform](#Debugging-tools-in-pulpissimo-platform)<br> 
 
 
 ## Abstract
