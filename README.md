@@ -10,6 +10,10 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Codes for custom instructions](#Codes-for-custom-instructions)<br>
 [Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Starting point](#Starting-point)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Id_stage](#Id-stage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Core](#Core)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Cumulative accelerator](#Cumulative-accelerator)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Ex stage](#Ex-stage)<br>
 [Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
 [Testing acceleration](#Testing-acceleration)<br>
 [Debugging and Problems](#Debugging-and-Problems)<br>
@@ -615,6 +619,7 @@ This is how the instruction decode stage looks:
 /*TODO
 WRITE BRIEF DESCRIPTION ON HOW id stage works*/
 
+### Decoder
 The good starting point is cv32e40p_decoder.<br>
 There under:<br>
 unique case (instr_rdata_i[6:0])<br>
@@ -688,7 +693,8 @@ Now, since this module is integrated into cv32e40p_id_stage, and 2 more outputs 
 .cml_get_o(cml_en), 
 .cml_rst_o(cml_rst),
 ```
-Where cml_en and cml_rst are new variables, that should be created following the example of alu_en.<br>
+Where cml_en and cml_rst are new variables, that should be created by following the example of alu_en.<br>
+### Id_stage
 At the ID-EX pipeline in cv32e40p_id_stage, where local variables are connected to output signals this code should be added:<br>
 ```verilog
 cml_en_ex_o <= cml_en;
@@ -720,7 +726,7 @@ cml_get_ex_o          <= 1'b0;
 ```
 
 And thats all of the changes for cv32e40p_id_stage.<br>
-
+### Core
 Now since cv32e40p_id_stage is integrated in cv32e40p_core, and outputs of cv32e40p_id_stage are changed, it should be updated in cv32e40p_core.<br>
 New values should be connected to new local variables.<br>
 Those new local variables only connect new cv32e40p_id_stage signals to cv32e40p_ex_stage.<br>
@@ -733,7 +739,7 @@ input logic               cml_en_i,
 input logic               cml_get_i,
 input logic               cml_rst_i,
 ```
-
+### Cumulative accelerator
 Now is the time to start writing cumulative accelerator.
 Its very simlple and short that I dont even need to put it in separate file:
 
@@ -766,7 +772,8 @@ module cv32e40p_cumulative #(
 endmodule  // cv32e40p_cumulative
 ```
 Its pretty much self explanatory.
-ntegrating it into cv32e40p_ex_stage is also simple and can be done by following the example of the ALU. The output should be connected to the output of cv32e40p_ex_stage in this part of the code:
+### Ex stage
+integrating it into cv32e40p_ex_stage is also simple and can be done by following the example of the ALU. The output should be connected to the output of cv32e40p_ex_stage in this part of the code:
 
 ```verilog
 ...
