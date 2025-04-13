@@ -1480,7 +1480,7 @@ calc_layer_5_outputs should have this code:
 Classic cnn code, without any accelerations could be run in visual studio code for example with standard gcc compiler.
 However, custom instructions couldn't be tested there, because they are specifically made for cv32e40p core.
 The right place to test those instructions is pulpissimo platform.
-To test code on pulpissimo platform, its needed to copy .c and .h files (including values.h) and paste them into hello world folder, in pulp-rt-examples folder.
+To test code on pulpissimo platform, its needed to copy .c and .h files (including values.h) and paste them into hello folder, in pulpissimo/sw/pulp-rt-examples folder.
 The main cnn.c file should be renamed into test.c for code to compile.
 Or, alternatively open MakeFile in:
 pulpissimo/sw/pulp-rt-examples/hello/
@@ -1500,7 +1500,10 @@ PULP_CFLAGS = -O0 -g
 ```
 Configures optimisation, so that could also be changed.
 
-Now custom instructions could be added into code, thats it, run the program the same as the hello world program.
+Now the code should be ran by opening terminal from hello folder, and typing:
+```
+make clean all run
+```
 
 ## Debugging and Problems
 
