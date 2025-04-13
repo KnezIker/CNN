@@ -16,8 +16,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Ex stage](#Ex-stage)<br>
 [Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
 [Writing the example code with the custom instructions](#Writing-the-example-code-with-the-custom-instructions)<br>
-[What else could be accelerated?](#What-else-could-be-accelerated)
-&nbsp;&nbsp;&nbsp;&nbsp;[Pooling](#Pooling)
+[What else could be accelerated?](#What-else-could-be-accelerated)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Pooling](#Pooling)<br>
 [Testing acceleration](#Testing-acceleration)<br>
 [Debugging and Problems](#Debugging-and-Problems)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Debugging tools in pulpissimo platform](#Debugging-tools-in-pulpissimo-platform)<br> 
