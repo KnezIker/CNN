@@ -18,7 +18,12 @@
 [Writing the example code with the custom instructions](#Writing-the-example-code-with-the-custom-instructions)<br>
 [What else could be accelerated?](#What-else-could-be-accelerated)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Pooling](#Pooling)<br>
-[Testing acceleration](#Testing-acceleration)<br>
+[Testing the accelerated code](#Testing-the-accelerated-code)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Layer 0](#Layer-0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Pooling 1](#Pooling-1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Layer 2](#Layer-2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Pooling 2](#Pooling-2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Layer 5](#Layer-5)<br>
 [Debugging and Problems](#Debugging-and-Problems)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Debugging tools in pulpissimo platform](#Debugging-tools-in-pulpissimo-platform)<br> 
 
@@ -1218,7 +1223,259 @@ module cv32e40p_max(
 endmodule  // cv32e40p_max
 ```
 
-## Testing acceleration
+## Testing the accelerated code
+
+Now that there are cummulative and pooling custom instructions, they could be implemented into code into all layers:<br>
+Firstly, it would be nice to implement custom instructions in function wrappers, so they could be used more naturally in c.
+```c
+void cmul(int32_t ra, int32_t rb) {
+__asm__ volatile ("cmul %0, %1" : : "r"(ra), "r"(rb));
+}
+int32_t cget(void) {
+    int32_t result;
+    __asm__ volatile ("cget %0" : "=r" (result));
+    return result;
+}
+void crst(void) {
+    __asm__ volatile ("crst");
+}
+void pooling_load(int32_t ra, int32_t rb) {
+    __asm__ volatile ("mld %0, %1\n\t" : : "r"(ra), "r"(rb));
+}
+void pooling_reset() {
+    __asm__ volatile ("mrst\n\t");
+}
+int pooling_get() {
+    int32_t result;
+    __asm__ volatile ("mget %0" : "=r" (result));
+    return result;
+}
+```
+### Layer 0
+Instead of this code
+```c
+{
+    int temp = 0;
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L0_CHANNEL_WIDTH; j++) {
+            printf("L0\n");
+            for (int k = 0; k < L0_CHANNEL_WIDTH; k++) {
+                for(int g = 0; g < L0_KERNEL_DIMENSIONS; g++) {
+                    for(int u = 0; u < L0_KERNEL_DIMENSIONS; u++){
+                        temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);               // FIXED POINT
+                    }
+                }
+                L0C[i][j][k] = ReLu(temp + L0B[i]);
+                temp = 0;
+            }
+        }
+    }
+}
+```
+calc_layer_0_Channels should have this code:
+```c
+{
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L0_CHANNEL_WIDTH; j++) {
+            printf("L0\n");
+            for (int k = 0; k < L0_CHANNEL_WIDTH; k++) {
+                crst();
+                for(int g = 0; g < L0_KERNEL_DIMENSIONS; g++) {
+                    for(int u = 0; u < L0_KERNEL_DIMENSIONS; u++){
+                        cmul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);                               // ACCELERATED FIXED POINT
+                    }
+                }
+                L0C[i][j][k] = ReLu(cget() + L0B[i]);
+            }
+        }
+    }
+}
+```
+### Pooling 1
+Instead of this code
+```c
+{
+    int col;
+    int row;
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        printf("P1\n");
+        for (j = 0, m = 0; j < L0_CHANNEL_WIDTH; j = j + 2, m++) {
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L0_CHANNEL_WIDTH; k = k + 2, n++) {
+                col = k;
+                row = j;
+                for (int g = 0; g < 2; g++) {
+                    for (int h = 0; h < 2; h++) {
+                        if(L0C[i][j+g][k+h] > L0C[i][row][col])
+                        {
+                            col = k+h;
+                            row = j+g;
+                        }
+                    }
+                }
+                L0CP[i][m][n] = L0C[i][row][col];
+            }
+        }
+    }
+}
+```
+pooling1 should have this code:
+```c
+{
+    pooling_reset();
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        printf("P1\n");
+        for (j = 0, m = 0; j < L0_CHANNEL_WIDTH; j = j + 2, m++) {
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L0_CHANNEL_WIDTH; k = k + 2, n++) {
+                pooling_load(L0C[i][j][k], L0C[i][j][k+1]);
+                pooling_load(L0C[i][j+1][k], L0C[i][j+1][k+1]);
+                L0CP[i][m][n] = pooling_get();
+            }
+        }
+    }
+}
+```
+### Layer 2
+Instead of this code
+```c
+{
+    int temp = 0;
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L2_CHANNEL_WIDTH; j++) {
+            printf("L2\n");
+            for (int k = 0; k < L2_CHANNEL_WIDTH  ; k++) {
+                for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
+                    for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++){   
+                            temp = temp + mul(L0CP[g][h+j][f+k], L2K[i][g][h][f]);          // FIXED POINT
+                        }
+                    }
+                }
+                L2C[i][j][k] = sigmoid(temp + L2B[i]);
+                temp = 0;
+            }
+        }
+    }
+}
+```
+calc_layer_2_Channels should have this code:
+```c
+{
+    crst();
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L2_CHANNEL_WIDTH; j++) {
+            printf("Working on Layer 2\n");
+            for (int k = 0; k < L2_CHANNEL_WIDTH  ; k++) {
+                for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
+                    for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++){   
+                            cmul(L0CP[g][h+j][f+k], L2K[i][g][h][f]);                         // ACCELERATED FIXED POINT
+                        }
+                    }
+                }
+                L2C[i][j][k] = sigmoid(cget() + L2B[i]);
+                crst();
+            }
+        }
+    }
+}
+```
+
+### Pooling 2
+
+Instead of this code
+```c
+{
+    int temp = 0;
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L2_CHANNEL_WIDTH; j++) {
+            printf("L2\n");
+            for (int k = 0; k < L2_CHANNEL_WIDTH  ; k++) {
+                for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
+                    for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++){   
+                            temp = temp + mul(L0CP[g][h+j][f+k], L2K[i][g][h][f]);          // FIXED POINT
+                        }
+                    }
+                }
+                L2C[i][j][k] = sigmoid(temp + L2B[i]);
+                temp = 0;
+            }
+        }
+    }
+}
+```
+pooling2 should have this code:
+```c
+{
+    pooling_reset();
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        for (j = 0, m = 0; j < L2_CHANNEL_WIDTH; j = j + 2, m++) {
+            printf("P2\n");
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L2_CHANNEL_WIDTH; k = k + 2, n++) {
+                pooling_load(L2C[i][j][k], L2C[i][j][k+1]);
+                pooling_load(L2C[i][j+1][k], L2C[i][j+1][k+1]);
+                L2CP[i][m][n] = pooling_get();
+            }
+        }
+    }
+}
+```
+
+### Layer 5
+
+Instead of this code
+```c
+{
+    int m = 0;
+    int32_t temp = 0;
+    for(int i = 0; i < NUMBER_OF_OUTPUTS; i++){
+        printf("L5\n");
+        temp = 0;
+        m = 0;
+        for(int j = 0; j < L3_CHANNEL_WIDTH; j++) {
+            for(int k = 0; k < L3_CHANNEL_WIDTH; k++) {
+                for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++){
+                    temp = temp + mul(L2CP[g][j][k], L5W[i][m]);          // FIXED POINT
+                    m++;
+                }
+            }
+        }
+        OUT[i] = temp + L5B[i];
+    }
+}
+```
+calc_layer_5_outputs should have this code:
+```c
+{
+    int m = 0;
+    for(int i = 0; i < NUMBER_OF_OUTPUTS; i++){
+        printf("L5\n");
+        crst();
+        m = 0;
+        for(int j = 0; j < L3_CHANNEL_WIDTH; j++) {
+            for(int k = 0; k < L3_CHANNEL_WIDTH; k++) {
+                for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++){
+                    cmul(L2CP[g][j][k], L5W[i][m]);                   // ACCELERATED FIXED POINT
+                    m++;
+                }
+            }
+        }
+        OUT[i] = cget() + L5B[i];
+    }
+}
+```
 
 Classic cnn code, without any accelerations could be run in visual studio code for example with standard gcc compiler.
 However, custom instructions couldn't be tested there, because they are specifically made for cv32e40p core.
