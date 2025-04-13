@@ -32,6 +32,7 @@
 ## Abstract
 The idea of this project is to train a simple convolutional neural network (CNN) in python that detects numbers from 0 to 9 in 28x28 8-bit grayscale images.
 Then, to extract biases and weights.
+Then to write C code that performs CNN.
 Then to put those weights and biases in C code and compile it in gcc compiler for the Pulpissimo architecture with cv32e40p RISCY core.
 Finally, to determine which instructions are repeated the most in assembly code and to create a simple hardware accelerator, anlong with custom instructions in the RISCY core that will reduce number of instructions and execution time of program.
 
