@@ -5,7 +5,6 @@
 [CNN in detail](#CNN-in-detail)<br>
 [The code overview](#The-code-overview)<br>
 [Following assembly code](#Following-assembly-code)<br>
-	[Calculate function](#Calculate-function)<br>
 [Defining the hardware accelerator and the custom instructions](Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
 	[Codes for custom instructions](Codes-for-custom-instructions)<br>
 [Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
