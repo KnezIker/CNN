@@ -3,17 +3,17 @@
 [Abstract](#Abstract)<br>
 [CNN structure](#CNN-structure)<br>
 [CNN in detail](#CNN-in-detail)<br>
-[The code overview]<br>
-[Following assembly code]<br>
-	[calc_layer_0_Channels function]<br>
-[Defining the hardware accelerator and the custom instructions]<br>
-	[Codes for custom instructions]<br>
-[Preparing the cv32e40p core for the accelerator]<br>
-	[starting point]<br>
-[Configuring GCC to recognize new instructions]<br>
-[Testing acceleration]<br>
-[Debugging and Problems]<br>
-	[Debugging tools in pulpissimo platform:]<br>
+[The code overview](#The-code-overview)<br>
+[Following assembly code](#Following-assembly-code)<br>
+	[calc_layer_0_Channels function](#calc-layer-0-Channels-function)<br>
+[Defining the hardware accelerator and the custom instructions](Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
+	[Codes for custom instructions](Codes-for-custom-instructions)<br>
+[Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
+	[starting point](#starting-point)<br>
+[Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
+[Testing acceleration](#Testing-acceleration)<br>
+[Debugging and Problems](#Debugging-and-Problems)<br>
+	[Debugging tools in pulpissimo platform](#Debugging-tools-in-pulpissimo-platform)<br>
 
 
 ## Abstract
