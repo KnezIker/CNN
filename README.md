@@ -5,6 +5,7 @@
 [CNN in detail](#CNN-in-detail)<br>
 [The code overview](#The-code-overview)<br>
 [Following assembly code](#Following-assembly-code)<br>
+[How many instructions?](#How-many-instructions?)<br>
 [Defining the hardware accelerator and the custom instructions](Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
 	[Codes for custom instructions](Codes-for-custom-instructions)<br>
 [Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
@@ -444,6 +445,7 @@ mul:
 	addi	sp,sp,32	# Deallocate 32 bytes from the stack
 	jr	ra		# Return from the function
 ```
+## How many instructions?
 Now, this is a lot of code. Fortunately, there is no need to understand every detail, as a hardware accelerator for this computation would operate differently.<br>
 
 However, there are 32 instructions in this section, each executing in a single cycle each.
