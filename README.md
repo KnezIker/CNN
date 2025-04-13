@@ -6,8 +6,8 @@
 [The code overview](#The-code-overview)<br>
 [Following assembly code](#Following-assembly-code)<br>
 [How many instructions?](#How-many-instructions)<br>
-[Defining the hardware accelerator and the custom instructions](Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
-	[Codes for custom instructions](Codes-for-custom-instructions)<br>
+[Defining the hardware accelerator and the custom instructions](#Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
+	[Codes for custom instructions](#Codes-for-custom-instructions)<br>
 [Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
 	[starting point](#starting-point)<br>
 [Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
