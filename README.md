@@ -9,7 +9,7 @@
 [Defining the hardware accelerator and the custom instructions](#Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Codes for custom instructions](#Codes-for-custom-instructions)<br>
 [Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[Starting point](#Starting-point)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Decoder](#Decoder)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Id_stage](#Id-stage)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Core](#Core)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Cumulative accelerator](#Cumulative-accelerator)<br>
@@ -583,7 +583,6 @@ done
 This will create a working_dir folder in the Pulpissimo folder, and all Pulpissimo RTL files will be there, in separate folders.
 The cv32e40p files are located in pulpissimo/working_dir/cv32e40p/rtl.
 
-### Starting point
 A detailed description and datasheet of cv32e40p can be found [here](https://github.com/openhwgroup/cv32e40p)).<br> 
 This is just an oversimplified version that covers only the things related to this topic.
 
