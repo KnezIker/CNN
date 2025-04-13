@@ -1425,5 +1425,6 @@ Other problems were manly hardware realated (forgot to add keyword signed in cmu
 ## Results
 
 Running unaccelerated program with O0 optimisation results in:
-3,460,246 instructions and simulation takes 2 hours and 30 minutes.
+3,344,060 instructions and simulation takes 2 hours and 30 minutes.
 Running accelerated program with O0 optimisation results in:
+2,501,686 instructions and simulation takes 1 hour and 48 minutes.
