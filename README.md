@@ -1506,7 +1506,7 @@ Now the code should be ran by opening terminal from hello folder, and typing:
 make clean all run
 ```
 ## Results
-
+ 
 Running unaccelerated program with O0 optimisation results in:<br>
 3,344,060 instructions and simulation takes 2 hours and 30 minutes.<br>
 Running accelerated program with O0 optimisation results in:<br>
