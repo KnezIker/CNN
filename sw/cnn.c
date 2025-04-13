@@ -23,79 +23,23 @@
 #define L2_NUMBER_OF_KERNELS        4
 #define L2_KERNEL_DIMENSIONS        3
 #define L3_POOL_DIMENSIONS          2
-#define L0_CHANNEL_WITH             (IMG_WIDTH - L0_KERNEL_DIMENSIONS + 1)
-#define L1_CHANNEL_WITH             (L0_CHANNEL_WITH/L1_POOL_DIMENSIONS)
-#define L2_CHANNEL_WITH             (L1_CHANNEL_WITH - L2_KERNEL_DIMENSIONS + 1)
-#define L3_CHANNEL_WITH             (L2_CHANNEL_WITH)/L3_POOL_DIMENSIONS
-#define L5_NUMBER_OF_NODES          (L3_CHANNEL_WITH*L3_CHANNEL_WITH*L2_NUMBER_OF_KERNELS)
+#define L0_CHANNEL_WIDTH            (IMG_WIDTH - L0_KERNEL_DIMENSIONS + 1)
+#define L1_CHANNEL_WIDTH            (L0_CHANNEL_WIDTH/L1_POOL_DIMENSIONS)
+#define L2_CHANNEL_WIDTH            (L1_CHANNEL_WIDTH - L2_KERNEL_DIMENSIONS + 1)
+#define L3_CHANNEL_WIDTH            (L2_CHANNEL_WIDTH)/L3_POOL_DIMENSIONS
+#define L5_NUMBER_OF_NODES          (L3_CHANNEL_WIDTH*L3_CHANNEL_WIDTH*L2_NUMBER_OF_KERNELS)
+#include "hal/cv32e40p/cv32e40p.h"
 
 #include "cnn.h"
-
+int32_t OUT [10];
 
 /*TODO
 -Make softmax function and use it instead of max_out
 */
 
-void load_values_from_csv()
-{
-    /*
-    uint8_t IMG  [IMG_HEIGHT][IMG_WIDTH];                                                                  // input image
-    int32_t L0K  [L0_NUMBER_OF_KERNELS][L0_KERNEL_DIMENSIONS][L0_KERNEL_DIMENSIONS];                       // Layer0 kernels
-    int32_t L0B  [L0_NUMBER_OF_KERNELS];                                                                   // Layer0 biases
-    int32_t L2K  [L2_NUMBER_OF_KERNELS][L0_NUMBER_OF_KERNELS][L2_KERNEL_DIMENSIONS][L2_KERNEL_DIMENSIONS]; // Layer2 kernels
-    int32_t L2B  [L2_NUMBER_OF_KERNELS];                                                                   // Layer2 biases
-    int32_t L5W  [NUMBER_OF_OUTPUTS][L5_NUMBER_OF_NODES];                                                  // Layer5 weights
-    int32_t L5B  [NUMBER_OF_OUTPUTS];                                                                      // Layer5 biases
-    int32_t OUT  [NUMBER_OF_OUTPUTS];
-    int correct = 0;
-    float percentage;
-    int cnt = 0;
-    int8_t file = 0;
-    DIR *dir;
-    struct dirent *entry;
-    const char *base_dir = "../test_pgm_images";
-    load_weights(L0K, L0B, L2K, L2B, L5W, L5B);
 
-    // Iterate through directories
-    for (int i = 0; i < 10 ; i++) 
-    {
-        char dir_path[256];
-        snprintf(dir_path, sizeof(dir_path), "%s/%d", base_dir, i);
-        if ((dir = opendir(dir_path)) == NULL) {
-            printf("Cant opetn directory %s\n", dir_path);
-            break;
-        }
-
-        // Iterate through all files in the directory
-        while ((entry = readdir(dir)) != NULL) 
-        {
-            // Skip "." and ".." (current and parent directory)
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-                continue;
-            }
-
-            // Create the full file path and load image
-            char file_path[512];
-            snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, entry->d_name);
-            printf("%s", file_path);
-            load_image(file_path, IMG);
-
-            calculate(OUT, IMG, L0K, L0B, L2K, L2B, L5W, L5B);
-
-            if(file == max_out(OUT)) correct++;
-            cnt++;
-        }
-        file++;
-    }
-    percentage = ((float)correct / cnt)*100.0;
-    printf("accuracy : %f\n\n", percentage);
-    */
-}
 void load_values_from_header()
 { 
-    int32_t OUT  [NUMBER_OF_OUTPUTS];
-    printf("Start\n");
-    //load_image(file_path, IMG);
     calculate(OUT, IMG, L0W, L0B, L2W, L2B, L5W, L5B);
     for(int i = 0; i < 10; i++)
     {
@@ -103,5 +47,13 @@ void load_values_from_header()
     }
 }
 int main() {
+    printf("Start\n");
+    unsigned int instr_count = 0;
+    asm volatile("csrc 0x320, %0" : : "r"(0xffffffff));     // Start instruction counter
     load_values_from_header();
+    asm volatile ("csrr %0, 0xB02" : "=r" (instr_count));   // Get value from instruction counter
+    printf("Instrukcije: %u\n", instr_count);
+    printf("End\n");
+
 }
+
