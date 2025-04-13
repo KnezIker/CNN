@@ -15,7 +15,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;[Cumulative accelerator](#Cumulative-accelerator)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;[Ex stage](#Ex-stage)<br>
 [Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
-[Writing the code with the custom instructions](#Writing-the-code-with-the-custom-instructions)<br>
+[Writing the example code with the custom instructions](#Writing-the-example-code-with-the-custom-instructions)<br>
 [What else could be accelerated?](#What-else-could-be-accelerated)
 &nbsp;&nbsp;&nbsp;&nbsp;[Pooling](#Pooling)
 [Testing acceleration](#Testing-acceleration)<br>
@@ -849,7 +849,7 @@ Make sure that in bashrc PULP_RISCV_GCC_TOOLCHAIN path is defined only once.
 Otherwise, gcc might be compiled in one path, and pulpissimo will use older version of gcc from different path.
 When build is done, build pulpissimo and run test program.
 
-## Writing the code with the custom instructions
+## Writing the example code with the custom instructions
 To run test program, follow the same rules in pulpissimo readme file, for running hello world program.
 Just instead of the hello world program, copy content of sw/test.c into the hello world program.
 
