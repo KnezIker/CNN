@@ -1,5 +1,22 @@
 # CNN
-## Project idea
+## Content
+[Abstract](#Abstract)<br>
+[CNN structure](#CNN structure)<br>
+[CNN in detail]<br>
+[The code overview]<br>
+[Following assembly code]<br>
+	[calc_layer_0_Channels function]<br>
+[Defining the hardware accelerator and the custom instructions]<br>
+	[Codes for custom instructions]<br>
+[Preparing the cv32e40p core for the accelerator]<br>
+	[starting point]<br>
+[Configuring GCC to recognize new instructions]<br>
+[Testing acceleration]<br>
+[Debugging and Problems]<br>
+	[Debugging tools in pulpissimo platform:]<br>
+
+
+## Abstract
 The idea of this project is to train a simple convolutional neural network (CNN) in python that detects numbers from 0 to 9 in 28x28 8-bit grayscale images.
 Then, to extract biases and weights.
 Then to put those weights and biases in C code and compile it in gcc compiler for the Pulpissimo architecture with cv32e40p RISCY core.
@@ -21,7 +38,7 @@ model = models.Sequential([ <br>
 
 And it has an accuracy of 96%.
 
-## CNN structure explanation
+## CNN in detail
 
 It consists of 5 layers:
 <div align="center">
@@ -84,7 +101,7 @@ In Layer 4, all matrix values are flattened into one array.
 
 In the final Layer 5, the output array of Layer 4 is connected in a neural network, and the output of Layer 5 consists of 10 percentages that represent how confident the CNN is in identifying the number it sees.
 
-## The code
+## The code overview
 In the sw folder, there are three main files:<br>
 cnn.py<br>
 cnn.c<br>
@@ -485,7 +502,7 @@ Basically, to make this code:<br>
 temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);
 ```
 hardware accelerated.
-## Definition of hardware accelerator and custom instructions
+## Defining the hardware accelerator and the custom instructions
 
 The Hardware Accelerator should be defined as:
 ```verilog
@@ -1424,11 +1441,11 @@ Other problems were manly hardware realated (forgot to add keyword signed in cmu
 
 ## Results
 
-Running unaccelerated program with O0 optimisation results in:
-3,344,060 instructions and simulation takes 2 hours and 30 minutes.
-Running accelerated program with O0 optimisation results in:
-2,501,686 instructions and simulation takes 1 hour and 48 minutes.
+Running unaccelerated program with O0 optimisation results in:<br>
+3,344,060 instructions and simulation takes 2 hours and 30 minutes.<br>
+Running accelerated program with O0 optimisation results in:<br>
+2,501,686 instructions and simulation takes 1 hour and 48 minutes.<br>
 
 <div align="center">
-  <img src="doc/Very_nice.png" alt="Opis slike" width="300" />
+  <img src="doc/Very_nice.jpg" alt="Opis slike" width="200" />
 </div>
