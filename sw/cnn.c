@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+//#include <rt_api.h>
 //#include <dirent.h>
 
 #define LOAD_DATA_FROM_HEADER       1
@@ -31,6 +32,10 @@
 #include "hal/cv32e40p/cv32e40p.h"
 
 #include "cnn.h"
+
+int __rt_fpga_fc_frequency = 125000000; // e.g. 20000000 for 20MHz;
+int __rt_fpga_periph_frequency = 125000000; // e.g. 10000000 for 10MHz;
+
 int32_t OUT [10];
 
 /*TODO
@@ -49,9 +54,9 @@ void load_values_from_header()
 int main() {
     printf("Start\n");
     unsigned int instr_count = 0;
-    asm volatile("csrc 0x320, %0" : : "r"(0xffffffff));     // Start instruction counter
+    asm volatile("csrc 0x320, %0" : : "r"(0xffffffff));
     load_values_from_header();
-    asm volatile ("csrr %0, 0xB02" : "=r" (instr_count));   // Get value from instruction counter
+    asm volatile ("csrr %0, 0xB02" : "=r" (instr_count));
     printf("Instrukcije: %u\n", instr_count);
     printf("End\n");
 
