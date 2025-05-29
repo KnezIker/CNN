@@ -1,7 +1,38 @@
 # CNN
-## Project idea
+## Content
+[Abstract](#Abstract)<br>
+[CNN structure](#CNN-structure)<br>
+[CNN in detail](#CNN-in-detail)<br>
+[The code overview](#The-code-overview)<br>
+[Following assembly code](#Following-assembly-code)<br>
+[How many instructions?](#How-many-instructions)<br>
+[Defining the hardware accelerator and the custom instructions](#Defining-the-hardware-accelerator-and-the-custom-instructions)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Codes for custom instructions](#Codes-for-custom-instructions)<br>
+[Preparing the cv32e40p core for the accelerator](#Preparing-the-cv32e40p-core-for-the-accelerator)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Decoder](#Decoder)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Id_stage](#Id-stage)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Core](#Core)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Cumulative accelerator](#Cumulative-accelerator)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Ex stage](#Ex-stage)<br>
+[Configuring GCC to recognize new instructions](#Configuring-GCC-to-recognize-new-instructions)<br>
+[Writing the example code with the custom instructions](#Writing-the-example-code-with-the-custom-instructions)<br>
+[What else could be accelerated?](#What-else-could-be-accelerated)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Pooling](#Pooling)<br>
+[Testing the accelerated code](#Testing-the-accelerated-code)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Layer 0](#Layer-0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Pooling 1](#Pooling-1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Layer 2](#Layer-2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Pooling 2](#Pooling-2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Layer 5](#Layer-5)<br>
+[Results](#Results)<br>
+[Debugging and Problems](#Debugging-and-Problems)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Debugging tools in pulpissimo platform](#Debugging-tools-in-pulpissimo-platform)<br> 
+
+
+## Abstract
 The idea of this project is to train a simple convolutional neural network (CNN) in python that detects numbers from 0 to 9 in 28x28 8-bit grayscale images.
 Then, to extract biases and weights.
+Then to write C code that performs CNN.
 Then to put those weights and biases in C code and compile it in gcc compiler for the Pulpissimo architecture with cv32e40p RISCY core.
 Finally, to determine which instructions are repeated the most in assembly code and to create a simple hardware accelerator, anlong with custom instructions in the RISCY core that will reduce number of instructions and execution time of program.
 
@@ -21,7 +52,7 @@ model = models.Sequential([ <br>
 
 And it has an accuracy of 96%.
 
-## CNN structure explanation
+## CNN in detail
 
 It consists of 5 layers:
 <div align="center">
@@ -84,7 +115,7 @@ In Layer 4, all matrix values are flattened into one array.
 
 In the final Layer 5, the output array of Layer 4 is connected in a neural network, and the output of Layer 5 consists of 10 percentages that represent how confident the CNN is in identifying the number it sees.
 
-## The code
+## The code overview
 In the sw folder, there are three main files:<br>
 cnn.py<br>
 cnn.c<br>
@@ -428,6 +459,7 @@ mul:
 	addi	sp,sp,32	# Deallocate 32 bytes from the stack
 	jr	ra		# Return from the function
 ```
+## How many instructions?
 Now, this is a lot of code. Fortunately, there is no need to understand every detail, as a hardware accelerator for this computation would operate differently.<br>
 
 However, there are 32 instructions in this section, each executing in a single cycle each.
@@ -485,7 +517,7 @@ Basically, to make this code:<br>
 temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);
 ```
 hardware accelerated.
-## Definition of hardware accelerator and custom instructions
+## Defining the hardware accelerator and the custom instructions
 
 The Hardware Accelerator should be defined as:
 ```verilog
@@ -561,7 +593,6 @@ done
 This will create a working_dir folder in the Pulpissimo folder, and all Pulpissimo RTL files will be there, in separate folders.
 The cv32e40p files are located in pulpissimo/working_dir/cv32e40p/rtl.
 
-### starting point
 A detailed description and datasheet of cv32e40p can be found [here](https://github.com/openhwgroup/cv32e40p)).<br> 
 This is just an oversimplified version that covers only the things related to this topic.
 
@@ -597,6 +628,7 @@ This is how the instruction decode stage looks:
 /*TODO
 WRITE BRIEF DESCRIPTION ON HOW id stage works*/
 
+### Decoder
 The good starting point is cv32e40p_decoder.<br>
 There under:<br>
 unique case (instr_rdata_i[6:0])<br>
@@ -670,7 +702,8 @@ Now, since this module is integrated into cv32e40p_id_stage, and 2 more outputs 
 .cml_get_o(cml_en), 
 .cml_rst_o(cml_rst),
 ```
-Where cml_en and cml_rst are new variables, that should be created following the example of alu_en.<br>
+Where cml_en and cml_rst are new variables, that should be created by following the example of alu_en.<br>
+### Id_stage
 At the ID-EX pipeline in cv32e40p_id_stage, where local variables are connected to output signals this code should be added:<br>
 ```verilog
 cml_en_ex_o <= cml_en;
@@ -702,7 +735,7 @@ cml_get_ex_o          <= 1'b0;
 ```
 
 And thats all of the changes for cv32e40p_id_stage.<br>
-
+### Core
 Now since cv32e40p_id_stage is integrated in cv32e40p_core, and outputs of cv32e40p_id_stage are changed, it should be updated in cv32e40p_core.<br>
 New values should be connected to new local variables.<br>
 Those new local variables only connect new cv32e40p_id_stage signals to cv32e40p_ex_stage.<br>
@@ -715,7 +748,7 @@ input logic               cml_en_i,
 input logic               cml_get_i,
 input logic               cml_rst_i,
 ```
-
+### Cumulative accelerator
 Now is the time to start writing cumulative accelerator.
 Its very simlple and short that I dont even need to put it in separate file:
 
@@ -748,7 +781,8 @@ module cv32e40p_cumulative #(
 endmodule  // cv32e40p_cumulative
 ```
 Its pretty much self explanatory.
-ntegrating it into cv32e40p_ex_stage is also simple and can be done by following the example of the ALU. The output should be connected to the output of cv32e40p_ex_stage in this part of the code:
+### Ex stage
+integrating it into cv32e40p_ex_stage is also simple and can be done by following the example of the ALU. The output should be connected to the output of cv32e40p_ex_stage in this part of the code:
 
 ```verilog
 ...
@@ -821,24 +855,22 @@ This will take some time. About 2 hours.
 Make sure that in bashrc PULP_RISCV_GCC_TOOLCHAIN path is defined only once.
 Otherwise, gcc might be compiled in one path, and pulpissimo will use older version of gcc from different path.
 When build is done, build pulpissimo and run test program.
+
+## Writing the example code with the custom instructions
 To run test program, follow the same rules in pulpissimo readme file, for running hello world program.
 Just instead of the hello world program, copy content of sw/test.c into the hello world program.
 
 Integrating cmul, cget and crst into c and making it c compatabile, will be done [here](Part of this code where its done).<br>
 
-Lets see how much cycles will be saved and what else could be hardware accelerated.
-
-Without cmul accelerator there is:
-(((((38 + 44 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 3,208,592 cycles.<br>
-With cmul accelerator, 38 cycles of mul fuction and additional 5 instructions for adding result of mul function to tmp variable are compressed to one instruction. So the calculation is:
-(((((40 + 3) * 5 + 2 + 5) * 5 + 41 + 5) * 28 + 3 + 5) * 28 + 3 + 5) * 2 = 1,813,072 cycles.<br>
-Which is 170% times faster.
-40 lines of L98 code couldn't be further accelerater without hardware for loops.
-They already exist in pulpissimo architecture, and are kinda complex to integrate, so they will be skipped for now.
+## What else could be accelerated?
 
 Accelerating anything else further in this part of the code would only speed up by few percent, so lets go back to other layers.
 
 Next layer is pooling1:
+
+### Pooling
+
+Same process will be repeated in accelerating pooling layer
 
 c code:<br>
 
@@ -1193,28 +1225,92 @@ module cv32e40p_max(
 endmodule  // cv32e40p_max
 ```
 
-Now, using accelerator by itself won't save that much cycles, but using it in dedicated assembly code will accelerate code a lot.
-That is done in separate pooling.s assembly code that will be integrated into cnn.h c code like this:
+## Testing the accelerated code
 
+Now that there are cummulative and pooling custom instructions, they could be implemented into code in all layers:<br>
+Firstly, it would be nice to implement custom instructions in function wrappers, so they could be used more naturally in c.
 ```c
-void pooling1 (int32_t L0CP[L0_NUMBER_OF_KERNELS][L1_CHANNEL_WITH][L1_CHANNEL_WITH],
-int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], int dimension)
+void cmul(int32_t ra, int32_t rb) {
+__asm__ volatile ("cmul %0, %1" : : "r"(ra), "r"(rb));
+}
+int32_t cget(void) {
+    int32_t result;
+    __asm__ volatile ("cget %0" : "=r" (result));
+    return result;
+}
+void crst(void) {
+    __asm__ volatile ("crst");
+}
+void pooling_load(int32_t ra, int32_t rb) {
+    __asm__ volatile ("mld %0, %1\n\t" : : "r"(ra), "r"(rb));
+}
+void pooling_reset() {
+    __asm__ volatile ("mrst\n\t");
+}
+int pooling_get() {
+    int32_t result;
+    __asm__ volatile ("mget %0" : "=r" (result));
+    return result;
+}
+```
+### Layer 0
+Instead of this code
+```c
 {
-    //int col;
-    //int row;
+    int temp = 0;
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L0_CHANNEL_WIDTH; j++) {
+            printf("L0\n");
+            for (int k = 0; k < L0_CHANNEL_WIDTH; k++) {
+                for(int g = 0; g < L0_KERNEL_DIMENSIONS; g++) {
+                    for(int u = 0; u < L0_KERNEL_DIMENSIONS; u++){
+                        temp = temp + mul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);               // FIXED POINT
+                    }
+                }
+                L0C[i][j][k] = ReLu(temp + L0B[i]);
+                temp = 0;
+            }
+        }
+    }
+}
+```
+calc_layer_0_Channels should have this code:
+```c
+{
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L0_CHANNEL_WIDTH; j++) {
+            printf("L0\n");
+            for (int k = 0; k < L0_CHANNEL_WIDTH; k++) {
+                crst();
+                for(int g = 0; g < L0_KERNEL_DIMENSIONS; g++) {
+                    for(int u = 0; u < L0_KERNEL_DIMENSIONS; u++){
+                        cmul(IMG[g+j][u+k] << DECIMAL_BITS, L0K[i][g][u]);                               // ACCELERATED FIXED POINT
+                    }
+                }
+                L0C[i][j][k] = ReLu(cget() + L0B[i]);
+            }
+        }
+    }
+}
+```
+### Pooling 1
+Instead of this code
+```c
+{
+    int col;
+    int row;
     for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
         int m;
         int j;
-        for (j = 0, m = 0; j < L0_CHANNEL_WITH; j = j + dimension, m++) {
+        printf("P1\n");
+        for (j = 0, m = 0; j < L0_CHANNEL_WIDTH; j = j + 2, m++) {
             int n;
             int k;
-            for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) {
-                L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
-		/*                
+            for (k = 0, n = 0; k < L0_CHANNEL_WIDTH; k = k + 2, n++) {
                 col = k;
                 row = j;
-                for (int g = 0; g < dimension; g++) {
-                    for (int h = 0; h < dimension; h++) {
+                for (int g = 0; g < 2; g++) {
+                    for (int h = 0; h < 2; h++) {
                         if(L0C[i][j+g][k+h] > L0C[i][row][col])
                         {
                             col = k+h;
@@ -1222,140 +1318,171 @@ int32_t L0C [L0_NUMBER_OF_KERNELS][L0_CHANNEL_WITH][L0_CHANNEL_WITH], int dimens
                         }
                     }
                 }
-                L0CP[i][m][n] = L0C[i][row][col]; 
-                */
+                L0CP[i][m][n] = L0C[i][row][col];
             }
         }
     }
 }
 ```
-Commented lines represent what was accelerated by line : 
+pooling1 should have this code:
 ```c
-L0CP[i][m][n] = pooling_asm_func(&L0C[i][j][k], dimension, L0_CHANNEL_WITH);
+{
+    pooling_reset();
+    for (int i = 0; i < L0_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        printf("P1\n");
+        for (j = 0, m = 0; j < L0_CHANNEL_WIDTH; j = j + 2, m++) {
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L0_CHANNEL_WIDTH; k = k + 2, n++) {
+                pooling_load(L0C[i][j][k], L0C[i][j][k+1]);
+                pooling_load(L0C[i][j+1][k], L0C[i][j+1][k+1]);
+                L0CP[i][m][n] = pooling_get();
+            }
+        }
+    }
+}
 ```
-
-And pooling_asm_func is defined as extern function at the top of cnn.h file:
+### Layer 2
+Instead of this code
 ```c
-extern int pooling_asm_func(int32_t* address, int dimension, int channel_width);
+{
+    int temp = 0;
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L2_CHANNEL_WIDTH; j++) {
+            printf("L2\n");
+            for (int k = 0; k < L2_CHANNEL_WIDTH  ; k++) {
+                for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
+                    for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++){   
+                            temp = temp + mul(L0CP[g][h+j][f+k], L2K[i][g][h][f]);          // FIXED POINT
+                        }
+                    }
+                }
+                L2C[i][j][k] = sigmoid(temp + L2B[i]);
+                temp = 0;
+            }
+        }
+    }
+}
 ```
-And written in pooling.s file:
-
-```assembly
-# pooling_asm.S
-.text
-.globl pooling_asm_func  # Global symbol (available from C)
-
-# for dimmension = 2, its 29 cycles
-
-# int pooling_asm_func(int a, int b, int c, int d)
-# Input arguments a0 = *LOC[i][j][k], a1 = dimmension, a2 = LO_CHANNEL_WITH
-pooling_asm_func:
-    li a3, 0            # col_cnt = 0
-    li a4, 0            # row_cnt = 0
-    slli a2, a2, 2      # a2 = 4*LO_CHANNEL_WITH (number of address spaces)
-    mv a5, a0           # Address of LOC[i][j][k]
-    addi a6, a0, 4      # Address of LOC[i][j][k+1]
-    mrst                # Reset accelerator
-    mdim a1             # Set dimmension
-    j .T0               # Jump to T0
-.T1:
-    addi a5, a5, 8      # Take next LOC[i][j][k] address
-    addi a6, a6, 8      # Take next LOC[i][j][k+1] address
-.T0:
-    lw a7,0(a5)         # LOC[i][j][k]
-    lw t0,0(a6)         # LOC[i][j][k+1]
-    mld a7, t0          # Load accelerator with LOC[i][j][k+1] and LOC[i][j][k]
-    addi a3, a3, 2      # Increment col_cnt
-    blt	a3,a1,.T1       # If col_cnt < dimmension jump to T1
-    addi a4, a4, 1      # Increment row_cnt
-    blt	a4,a1,.T3       # If row_cnt < dimmension jump to T3
-    mget a0             # Get the result of the accelerator
-    ret                 # Return
-.T3:
-    mul t1, a4 ,a2      # t1 = row_cnt * LO_CHANNEL_WITH
-    add a5, a0, t1      # Take next LOC[i][j][k] address
-    add a6, a0, t1      # Take next LOC[i][j][k+1] address
-    li a3, 0            # Reset col_cnt
-    j .T0               # Jump to T0
-```
-The main acceleration lies in skipping calculation of LOC[i][j][k] in every for loop like before.
-Only downside is that for now it won't work for odd numbers for dimmension. But code can be easily changed to support that.
-/*TODO:
-Explain changes in json file
-Go trough new assembly code
-Integrate mull accelerator into code*/
-
-Assembly is around the same up to the for (k = 0, n = 0; k < L0_CHANNEL_WITH; k = k + dimension, n++) because nothing is changed before that.
-Some jumps just have different name.
-But L107 is a little bit different
-Now the changed assembly code looks like this
-```assembly
-.L107:
-	lw	a4,-20(s0)		# Load the value of i into register a4
-	mv	a5,a4			# a5 = i
-	slli	a5,a5,3			# a5 = 8*i
-	add	a5,a5,a4		# a5 = 9*i
-	slli	a5,a5,8			# a5 = 256*9*i
-	mv	a4,a5			# a4 = 256*9*i
-	lw	a5,-56(s0)		# Load the base address of L0C into register a5
-	add	a3,a5,a4		# a3 = LOC[i]
-	lw	a4,-28(s0)		# Load the value of j into register a4
-	mv	a5,a4			# a5 = j
-	slli	a5,a5,1			# a5 = 2*j
-	add	a5,a5,a4		# a5 = 3*j
-	slli	a5,a5,3			# a5 = 8*3*j
-	lw	a4,-36(s0)		# Load the value of k into register a4
-	add	a5,a5,a4		# a5 = 8*3*j + k
-	slli	a5,a5,2			# a5 = 4*(8*3*j + k)
-	add	a3,a3,a5		# a3 = address of LOC[i][j][k]
-	lw	a4,-20(s0)		# Load the value of i into register a4
-	mv	a5,a4			# a5 = a4
-	slli	a5,a5,3			# a5 = 8*i
-	add	a5,a5,a4		# a5 = 9*i
-	slli	a5,a5,6			# a5 = 64*9*i
-	mv	a4,a5			# a4 = 64*9*i
-	lw	a5,-52(s0)		# Load the base address of L0CP into register a5
-	add	s1,a5,a4		# s1 = LOCP[i]
-	li	a2,24			# a2 = 24
-	lw	a1,-60(s0)		# a1 = dimmension
-	mv	a0,a3			# a0 = address of LOC[i][j][k]
-	call	pooling_asm_func	# Calling pooling_asm_func
-	mv	a3,a0			# a3 = result of pooling_asm_func
-	lw	a4,-24(s0)		# a4 = m
-	mv	a5,a4			# a5 = m
-	slli	a5,a5,1			# a5 = 2*m
-	add	a5,a5,a4		# a5 = 3*m
-	slli	a5,a5,2			# a5 = 4*3*m
-	lw	a4,-32(s0)		# a4 = n
-	add	a5,a5,a4		# a5 = 4*3*m + n
-	slli	a5,a5,2			# a5 = 4*(4*3*m + n)
-	add	a5,s1,a5		# a5 = address of LOCP[i][m][n]
-	sw	a3,0(a5)		# Save value of LOCP[i][m][n] = result of pooling_asm_func
-	lw	a4,-36(s0)		# a4 = k
-	lw	a5,-60(s0)		# a5 = dimmension
-	add	a5,a4,a5		# a5 = k + dimmension
-	sw	a5,-36(s0)		# Save incremented k
-	lw	a5,-32(s0)		# a5 = n
-	addi	a5,a5,1			# a5 = n + 1
-	sw	a5,-32(s0)		# Save incremented n
+calc_layer_2_Channels should have this code:
+```c
+{
+    crst();
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L2_CHANNEL_WIDTH; j++) {
+            printf("Working on Layer 2\n");
+            for (int k = 0; k < L2_CHANNEL_WIDTH  ; k++) {
+                for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
+                    for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++){   
+                            cmul(L0CP[g][h+j][f+k], L2K[i][g][h][f]);                         // ACCELERATED FIXED POINT
+                        }
+                    }
+                }
+                L2C[i][j][k] = sigmoid(cget() + L2B[i]);
+                crst();
+            }
+        }
+    }
+}
 ```
 
-This time, L107 has 46 instructions and pooling_asm_func has 36 instructions (for dimmension = 2), totaling 82 instructions.<br>
-46 + 36 = 82<br>
-L107 will be called by L106 (+3 instructions) 24 times:<br>
-(46 + 36 + 3 ) * 24 = 2040 cycles<br>
-L106 has additional 7 instructions, and will be called by L108 (+ 3 instructions), which will be called by L105 (+ 3 instructions) 24 times:<br>
-((46 + 36 + 3 ) * 24 + 7 + 3 + 3) * 24 = 49,272 cycles<br>
-L105 will again be called 2 times for each layer 0 channel giving in totoal:<br>
-((46 + 36 + 3 ) * 24 + 7 + 3 + 3) * 24 * 2 = 98,544 cycles.<br>
-Compared to initial 306,432 cycles, accelerator made pooling faster by 311%<br>
+### Pooling 2
 
-## Testing acceleration
+Instead of this code
+```c
+{
+    int temp = 0;
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        for (int j = 0; j < L2_CHANNEL_WIDTH; j++) {
+            printf("L2\n");
+            for (int k = 0; k < L2_CHANNEL_WIDTH  ; k++) {
+                for(int g = 0; g < L0_NUMBER_OF_KERNELS; g++) {
+                    for(int h = 0; h < L2_KERNEL_DIMENSIONS; h++) {
+                        for(int f = 0; f < L2_KERNEL_DIMENSIONS; f++){   
+                            temp = temp + mul(L0CP[g][h+j][f+k], L2K[i][g][h][f]);          // FIXED POINT
+                        }
+                    }
+                }
+                L2C[i][j][k] = sigmoid(temp + L2B[i]);
+                temp = 0;
+            }
+        }
+    }
+}
+```
+pooling2 should have this code:
+```c
+{
+    pooling_reset();
+    for (int i = 0; i < L2_NUMBER_OF_KERNELS; i++) {
+        int m;
+        int j;
+        for (j = 0, m = 0; j < L2_CHANNEL_WIDTH; j = j + 2, m++) {
+            printf("P2\n");
+            int n;
+            int k;
+            for (k = 0, n = 0; k < L2_CHANNEL_WIDTH; k = k + 2, n++) {
+                pooling_load(L2C[i][j][k], L2C[i][j][k+1]);
+                pooling_load(L2C[i][j+1][k], L2C[i][j+1][k+1]);
+                L2CP[i][m][n] = pooling_get();
+            }
+        }
+    }
+}
+```
+
+### Layer 5
+
+Instead of this code
+```c
+{
+    int m = 0;
+    int32_t temp = 0;
+    for(int i = 0; i < NUMBER_OF_OUTPUTS; i++){
+        printf("L5\n");
+        temp = 0;
+        m = 0;
+        for(int j = 0; j < L3_CHANNEL_WIDTH; j++) {
+            for(int k = 0; k < L3_CHANNEL_WIDTH; k++) {
+                for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++){
+                    temp = temp + mul(L2CP[g][j][k], L5W[i][m]);          // FIXED POINT
+                    m++;
+                }
+            }
+        }
+        OUT[i] = temp + L5B[i];
+    }
+}
+```
+calc_layer_5_outputs should have this code:
+```c
+{
+    int m = 0;
+    for(int i = 0; i < NUMBER_OF_OUTPUTS; i++){
+        printf("L5\n");
+        crst();
+        m = 0;
+        for(int j = 0; j < L3_CHANNEL_WIDTH; j++) {
+            for(int k = 0; k < L3_CHANNEL_WIDTH; k++) {
+                for(int g = 0; g < L2_NUMBER_OF_KERNELS; g++){
+                    cmul(L2CP[g][j][k], L5W[i][m]);                   // ACCELERATED FIXED POINT
+                    m++;
+                }
+            }
+        }
+        OUT[i] = cget() + L5B[i];
+    }
+}
+```
 
 Classic cnn code, without any accelerations could be run in visual studio code for example with standard gcc compiler.
 However, custom instructions couldn't be tested there, because they are specifically made for cv32e40p core.
 The right place to test those instructions is pulpissimo platform.
-To test code on pulpissimo platform, its needed to copy .c and .h files (including values.h) and paste them into hello world folder, in pulp-rt-examples folder.
+To test code on pulpissimo platform, its needed to copy .c and .h files (including values.h) and paste them into hello folder, in pulpissimo/sw/pulp-rt-examples folder.
 The main cnn.c file should be renamed into test.c for code to compile.
 Or, alternatively open MakeFile in:
 pulpissimo/sw/pulp-rt-examples/hello/
@@ -1375,7 +1502,20 @@ PULP_CFLAGS = -O0 -g
 ```
 Configures optimisation, so that could also be changed.
 
-Now custom instructions could be added into code, thats it, run the program the same as the hello world program.
+Now the code should be ran by opening terminal from hello folder, and typing:
+```
+make clean all run
+```
+## Results
+ 
+Running unaccelerated program with O0 optimisation results in:<br>
+3,344,060 instructions and simulation takes 2 hours and 30 minutes.<br>
+Running accelerated program with O0 optimisation results in:<br>
+2,501,686 instructions and simulation takes 1 hour and 48 minutes.<br>
+
+<div align="center">
+  <img src="doc/Very_nice.jpg" alt="Opis slike" width="200" />
+</div>
 
 ## Debugging and Problems
 
@@ -1420,11 +1560,3 @@ Other problems were manly hardware realated (forgot to add keyword signed in cmu
    This will open QuestaSim and there every hardware signal could be checked<br>
 4. Printf("TRALALERO TRALALA")<br>
    Classic pritnf debugging is often the best type of debugging.
-   
-
-## Results
-
-Running unaccelerated program with O0 optimisation results in:
-3,344,060 instructions and simulation takes 2 hours and 30 minutes.
-Running accelerated program with O0 optimisation results in:
-2,501,686 instructions and simulation takes 1 hour and 48 minutes.
